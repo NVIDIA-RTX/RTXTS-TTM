@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "streamedTextureManager.h"
+#include "../include/streamedTextureManager.h"
 
 #include <vector>
 #include <set>
