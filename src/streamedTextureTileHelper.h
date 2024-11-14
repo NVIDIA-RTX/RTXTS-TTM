@@ -222,4 +222,9 @@ namespace nvstm
         x = x | (x >> 16);
         return x - (x >> 1);
     }
+
+    static uint32_t RoundUp(uint32_t value, uint32_t alignment)
+    {
+        return ((value + (alignment - 1)) / alignment) * alignment;
+    }
 } // nvstm

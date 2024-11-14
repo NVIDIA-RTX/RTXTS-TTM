@@ -343,24 +343,35 @@ namespace nvstm
             const uint32_t feedbackTilesPerTileX = desc.feedbackTilesX / desc.mipLevelTilingDescs[0].tilesX;
             const uint32_t feedbackTilesPerTileY = desc.feedbackTilesY / desc.mipLevelTilingDescs[0].tilesY;
 
-            for (uint32_t feedbackY = 0; feedbackY < desc.feedbackTilesY; ++feedbackY)
+            uint32_t feedbackTilesNum = desc.feedbackTilesX * desc.feedbackTilesY;
+            bool useBatchProcessing = (feedbackTilesNum % 8) == 0;
+            for (uint32_t feedbackTileIndex = 0; feedbackTileIndex < feedbackTilesNum;)
             {
-                for (uint32_t feedbackX = 0; feedbackX < desc.feedbackTilesX; ++feedbackX)
+                if (useBatchProcessing && ((feedbackTileIndex % 8) == 0))
                 {
-                    TileCoord tileCoord;
-                    tileCoord.mipLevel = samplerFeedbackDesc.pMinMipData[feedbackY * desc.feedbackTilesX + feedbackX];
-                    if (tileCoord.mipLevel != 0xFF)
+                    const uint64_t& mipLevelData = (uint64_t&)samplerFeedbackDesc.pMinMipData[feedbackTileIndex];
+                    if (mipLevelData == 0xFFFFFFFFFFFFFFFFLL)
                     {
-                        tileCoord.mipLevel = (uint32_t)std::max(tileCoord.mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
-
-                        tileCoord.x = (feedbackX / feedbackTilesPerTileX) >> tileCoord.mipLevel;
-                        tileCoord.y = (feedbackY / feedbackTilesPerTileY) >> tileCoord.mipLevel;
-
-                        uint32_t tileIndex = GetTileIndex(desc, tileCoord);
-                        firstTileIndex = std::min(firstTileIndex, tileIndex);
-                        requestedBits.SetBit(tileIndex);
+                        feedbackTileIndex += 8;
+                        continue;
                     }
                 }
+
+                const uint8_t& mipLevel = samplerFeedbackDesc.pMinMipData[feedbackTileIndex];
+                if (mipLevel != 0xFF)
+                {
+                    TileCoord tileCoord;
+                    tileCoord.mipLevel = (uint32_t)std::max(mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
+
+                    tileCoord.x = ((feedbackTileIndex % desc.feedbackTilesX) / feedbackTilesPerTileX) >> tileCoord.mipLevel;
+                    tileCoord.y = ((feedbackTileIndex / desc.feedbackTilesX) / feedbackTilesPerTileY) >> tileCoord.mipLevel;
+
+                    uint32_t tileIndex = GetTileIndex(desc, tileCoord);
+                    firstTileIndex = std::min(firstTileIndex, tileIndex);
+                    requestedBits.SetBit(tileIndex);
+                }
+
+                feedbackTileIndex++;
             }
 
             // Propagate requested tiles to lower regular mip levels
