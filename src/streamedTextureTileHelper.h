@@ -65,10 +65,8 @@ namespace nvstm
 
             SetBitIterator& operator--()
             {
-                if (m_index)
+                if (m_index >= 0)
                     --m_index;
-                else
-                    m_index = m_pBits->m_bitsNum;
 
                 while (ShouldRecede())
                     --m_index;
@@ -204,7 +202,7 @@ namespace nvstm
 
         SetBitIterator rend()
         {
-            return SetBitIterator(this, 0, true);
+            return SetBitIterator(this, -1, true);
         }
 
     protected:

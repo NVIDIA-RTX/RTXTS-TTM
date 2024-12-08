@@ -176,13 +176,13 @@ namespace nvstm
         switch (textureType)
         {
         case eFeedbackTexture:
-            textureDesc.width = desc.feedbackTilesX;
-            textureDesc.height = desc.feedbackTilesY;
+            textureDesc.textureOrMipRegionWidth = desc.tileWidth / desc.feedbackGranularityX;
+            textureDesc.textureOrMipRegionHeight = desc.tileHeight / desc.feedbackGranularityY;
             textureDesc.mipLevelsNum = desc.regularMipLevelsNum + desc.packedMipLevelsNum;
             break;
         case eMinMipTexture:
-            textureDesc.width = desc.regularTilesNum ? desc.mipLevelTilingDescs[0].tilesX : 1;
-            textureDesc.height = desc.regularTilesNum ? desc.mipLevelTilingDescs[0].tilesY : 1;
+            textureDesc.textureOrMipRegionWidth = desc.regularTilesNum ? desc.mipLevelTilingDescs[0].tilesX : 1;
+            textureDesc.textureOrMipRegionHeight = desc.regularTilesNum ? desc.mipLevelTilingDescs[0].tilesY : 1;
             textureDesc.mipLevelsNum = 1;
             break;
         }
@@ -240,17 +240,20 @@ namespace nvstm
         {
             uint32_t halfTextureWidth = tiledTextureDesc.textureWidth / 2;
             uint32_t halfTextureHeight = tiledTextureDesc.textureHeight / 2;
-            uint32_t m_feedbackTileWidth = tiledTextureDesc.tileWidth;
-            uint32_t m_feedbackTileHeight = tiledTextureDesc.tileHeight;
+            uint32_t feedbackTileWidth = tiledTextureDesc.tileWidth;
+            uint32_t feedbackTileHeight = tiledTextureDesc.tileHeight;
 
-            while (m_feedbackTileWidth > halfTextureWidth)
-                m_feedbackTileWidth = PrevPowerOf2(m_feedbackTileWidth - 1);
+            while (feedbackTileWidth > halfTextureWidth)
+                feedbackTileWidth = PrevPowerOf2(feedbackTileWidth - 1);
 
-            while (m_feedbackTileHeight > halfTextureHeight)
-                m_feedbackTileHeight = PrevPowerOf2(m_feedbackTileHeight - 1);
+            while (feedbackTileHeight > halfTextureHeight)
+                feedbackTileHeight = PrevPowerOf2(feedbackTileHeight - 1);
 
-            desc.feedbackTilesX = ((tiledTextureDesc.textureWidth - 1) / m_feedbackTileWidth) + 1;
-            desc.feedbackTilesY = ((tiledTextureDesc.textureHeight - 1) / m_feedbackTileHeight) + 1;
+            desc.feedbackGranularityX = tiledTextureDesc.tileWidth / feedbackTileWidth;
+            desc.feedbackGranularityY = tiledTextureDesc.tileHeight / feedbackTileHeight;
+
+            desc.feedbackTilesX = (tiledTextureDesc.textureWidth - 1) / feedbackTileWidth + 1;
+            desc.feedbackTilesY = (tiledTextureDesc.textureHeight - 1) / feedbackTileHeight + 1;
         }
 
         // Init streamed texture state
@@ -339,10 +342,6 @@ namespace nvstm
         uint32_t firstTileIndex = UINT32_MAX;
         if (samplerFeedbackDesc.pMinMipData)
         {
-            // We may have several feedback tiles per a single allocation tile
-            const uint32_t feedbackTilesPerTileX = desc.feedbackTilesX / desc.mipLevelTilingDescs[0].tilesX;
-            const uint32_t feedbackTilesPerTileY = desc.feedbackTilesY / desc.mipLevelTilingDescs[0].tilesY;
-
             uint32_t feedbackTilesNum = desc.feedbackTilesX * desc.feedbackTilesY;
             bool useBatchProcessing = (feedbackTilesNum % 8) == 0;
             for (uint32_t feedbackTileIndex = 0; feedbackTileIndex < feedbackTilesNum;)
@@ -363,13 +362,13 @@ namespace nvstm
                     TileCoord tileCoord;
                     tileCoord.mipLevel = (uint32_t)std::max(mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
 
-                    tileCoord.x = ((feedbackTileIndex % desc.feedbackTilesX) / feedbackTilesPerTileX) >> tileCoord.mipLevel;
-                    tileCoord.y = ((feedbackTileIndex / desc.feedbackTilesX) / feedbackTilesPerTileY) >> tileCoord.mipLevel;
+                    tileCoord.x = ((feedbackTileIndex % desc.feedbackTilesX) / desc.feedbackGranularityX) >> tileCoord.mipLevel;
+                    tileCoord.y = ((feedbackTileIndex / desc.feedbackTilesX) / desc.feedbackGranularityY) >> tileCoord.mipLevel;
 
-                    uint32_t tileIndex = GetTileIndex(desc, tileCoord);
-                    firstTileIndex = std::min(firstTileIndex, tileIndex);
-                    requestedBits.SetBit(tileIndex);
-                }
+                        uint32_t tileIndex = GetTileIndex(desc, tileCoord);
+                        firstTileIndex = std::min(firstTileIndex, tileIndex);
+                        requestedBits.SetBit(tileIndex);
+                    }
 
                 feedbackTileIndex++;
             }
