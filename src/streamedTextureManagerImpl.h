@@ -47,6 +47,8 @@ namespace nvstm
         MipLevelType packedMipLevelsNum = 0;
         TileType tileWidth = 0;
         TileType tileHeight = 0;
+        TileType feedbackGranularityX = 1;
+        TileType feedbackGranularityY = 1;
         TileType feedbackTilesX = 0;
         TileType feedbackTilesY = 0;
 

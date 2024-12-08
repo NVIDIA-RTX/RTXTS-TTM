@@ -86,8 +86,8 @@ namespace nvstm
 
     struct TextureDesc
     {
-        uint32_t width;
-        uint32_t height;
+        uint32_t textureOrMipRegionWidth;
+        uint32_t textureOrMipRegionHeight;
         uint32_t mipLevelsNum;
     };
 
