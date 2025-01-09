@@ -100,7 +100,7 @@ namespace nvstm
         {
         }
 
-        BitArray(BitArray& b) :
+        BitArray(const BitArray& b) :
             m_bitsNum(b.m_bitsNum),
             m_wordsNum(b.m_wordsNum),
             m_words(b.m_words)
