@@ -91,19 +91,18 @@ namespace nvstm
         uint32_t mipLevelsNum;
     };
 
+    // Heap internal structure which points back to the texture
+    struct TileAllocationInHeap
+    {
+        uint32_t textureId;
+        uint32_t textureTileIndex;
+    };
+
+    // Tile allocation of a slot in a heap
     struct TileAllocation
     {
-        union
-        {
-            uint32_t heapId = 0;
-            uint32_t textureId;
-        };
-        union
-        {
-            uint32_t heapTileIndex = UINT32_MAX;
-            uint32_t textureTileIndex;
-        };
-
+        uint32_t heapId = 0;
+        uint32_t heapTileIndex = UINT32_MAX;
         void* pHeap = nullptr;
     };
 
@@ -135,14 +134,14 @@ namespace nvstm
 
         virtual void WriteMinMipData(uint32_t textureId, uint8_t* data) = 0;
 
-        virtual TileAllocation GetFragmentedTextureTile(TileAllocation& prevTileAllocation) = 0;
+        virtual TileAllocationInHeap GetFragmentedTextureTile(TileAllocation& prevTileAllocation) = 0;
 
         // Helper functions
         virtual TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const = 0;
         virtual bool IsMovableTile(uint32_t textureId, TileType tileIndex) const = 0;
 
-        virtual const std::vector<TileCoord>& GetTilesCoordinates(uint32_t textureId) const = 0;
-        virtual const std::vector<TileAllocation>& GetTilesAllocations(uint32_t textureId) const = 0;
+        virtual const std::vector<TileCoord>& GetTileCoordinates(uint32_t textureId) const = 0;
+        virtual const std::vector<TileAllocation>& GetTileAllocations(uint32_t textureId) const = 0;
 
         // Statistics
         virtual Statistics GetStatistics() const = 0;

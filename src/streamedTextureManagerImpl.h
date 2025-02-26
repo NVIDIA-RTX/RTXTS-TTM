@@ -166,13 +166,13 @@ namespace nvstm
 
         void WriteMinMipData(uint32_t textureId, uint8_t* data) override;
 
-        TileAllocation GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
+        TileAllocationInHeap GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
 
         TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const override;
         bool IsMovableTile(uint32_t textureId, TileType tileIndex) const override;
 
-        const std::vector<TileCoord>& GetTilesCoordinates(uint32_t textureId) const override;
-        const std::vector<TileAllocation>& GetTilesAllocations(uint32_t textureId) const override;
+        const std::vector<TileCoord>& GetTileCoordinates(uint32_t textureId) const override;
+        const std::vector<TileAllocation>& GetTileAllocations(uint32_t textureId) const override;
 
         Statistics GetStatistics() const override;
 

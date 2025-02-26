@@ -63,7 +63,7 @@ namespace nvstm
             return m_usedList;
         }
 
-        const std::vector<TileAllocation>& GetAllocations() const
+        const std::vector<TileAllocationInHeap>& GetAllocations() const
         {
             return m_allocations;
         }
@@ -73,7 +73,7 @@ namespace nvstm
     private:
         std::vector<uint32_t> m_freeTileIndices;
         std::set<uint32_t> m_usedList;
-        std::vector<TileAllocation> m_allocations;
+        std::vector<TileAllocationInHeap> m_allocations;
 
         const uint32_t m_tilesNum;
         const uint32_t m_heapId;
@@ -114,7 +114,7 @@ namespace nvstm
             return GetTotalTilesNum() * m_tileSizeInBytes;
         }
 
-        TileAllocation GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const;
+        TileAllocationInHeap GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const;
 
     protected:
         std::vector<std::shared_ptr<TiledHeap>> m_heaps;

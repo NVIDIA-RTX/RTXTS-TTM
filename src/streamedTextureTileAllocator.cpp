@@ -123,9 +123,9 @@ namespace nvstm
         }
     }
 
-    TileAllocation TileAllocator::GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const
+    TileAllocationInHeap TileAllocator::GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const
     {
-        TileAllocation tileAllocation = {};
+        TileAllocationInHeap tileAllocation = {};
 
         // We need at least 2 heaps
         if (m_heaps.size() < 2)

@@ -131,16 +131,19 @@ namespace nvstm
         }
     }
 
-    TileAllocation StreamedTextureManagerImpl::GetFragmentedTextureTile(TileAllocation& prevTileAllocation)
+    TileAllocationInHeap StreamedTextureManagerImpl::GetFragmentedTextureTile(TileAllocation& prevTileAllocation)
     {
-        TileAllocation tileAllocation = m_tileAllocator->GetFragmentedTextureTile((StreamedTextureManager*)this);
+        TileAllocationInHeap tileAllocation = m_tileAllocator->GetFragmentedTextureTile((StreamedTextureManager*)this);
         if (tileAllocation.textureId)
         {
             TextureReference texture({ tileAllocation.textureId });
             StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
 
+            // Free tile from its current allocation
             TileAllocation oldAllocation = streamedTextureState.tileAllocations[tileAllocation.textureTileIndex];
             m_tileAllocator->FreeTile(oldAllocation);
+
+            // Allocate tile again
             streamedTextureState.tileAllocations[tileAllocation.textureTileIndex] = m_tileAllocator->AllocateTile(tileAllocation.textureId, tileAllocation.textureTileIndex);
             streamedTextureState.mappedBits.ClearBit(tileAllocation.textureTileIndex);
 
@@ -150,7 +153,7 @@ namespace nvstm
         return tileAllocation;
     }
 
-    const std::vector<TileCoord>& StreamedTextureManagerImpl::GetTilesCoordinates(uint32_t textureId) const
+    const std::vector<TileCoord>& StreamedTextureManagerImpl::GetTileCoordinates(uint32_t textureId) const
     {
         TextureReference texture({ textureId });
         const StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
@@ -158,7 +161,7 @@ namespace nvstm
         return m_streamedTextureDescs[streamedTextureState.descriptorIndex].tileIndexToTileCoord;
     }
 
-    const std::vector<TileAllocation>& StreamedTextureManagerImpl::GetTilesAllocations(uint32_t textureId) const
+    const std::vector<TileAllocation>& StreamedTextureManagerImpl::GetTileAllocations(uint32_t textureId) const
     {
         TextureReference texture({ textureId });
         const StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
