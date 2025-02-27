@@ -20,13 +20,13 @@
 
 project(rtxts)
 
-file(GLOB nvstm_include
+file(GLOB rtxts_include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
-file(GLOB nvstm_src
+file(GLOB rtxts_src
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
 add_library(rtxts STATIC
-        ${nvstm_include}
-        ${nvstm_src})
+        ${rtxts_include}
+        ${rtxts_src})
 

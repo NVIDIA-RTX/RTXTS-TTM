@@ -28,7 +28,7 @@
 #include <set>
 #include <memory>
 
-namespace nvstm
+namespace rtxts
 {
     class TiledHeap
     {
@@ -123,4 +123,4 @@ namespace nvstm
         const uint32_t m_tileSizeInBytes;
         uint32_t m_allocatedTilesNum = 0;
     };
-} // nvstm
+} // rtxts

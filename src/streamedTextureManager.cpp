@@ -22,7 +22,7 @@
 
 #include "streamedTextureManagerImpl.h"
 
-namespace nvstm
+namespace rtxts
 {
     StreamedTextureManagerImpl::StreamedTextureManagerImpl(const StreamedTextureManagerDesc& streamedTextureManagerDesc)
         : m_streamedTextureManagerDesc(streamedTextureManagerDesc)
@@ -461,4 +461,4 @@ namespace nvstm
     {
         return new StreamedTextureManagerImpl(desc);
     }
-} // nvstm
+} // rtxts

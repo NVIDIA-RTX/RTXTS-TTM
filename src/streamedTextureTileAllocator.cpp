@@ -22,7 +22,7 @@
 
 #include "streamedTextureTileAllocator.h"
 
-namespace nvstm
+namespace rtxts
 {
     TiledHeap::TiledHeap(uint32_t tilesNum, uint32_t heapId)
         : m_tilesNum(tilesNum)
@@ -164,4 +164,4 @@ namespace nvstm
 
         return tileAllocation;
     }
-} // nvstm
+} // rtxts

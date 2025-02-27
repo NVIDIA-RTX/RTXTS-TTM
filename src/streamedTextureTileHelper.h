@@ -25,7 +25,7 @@
 #include <vector>
 #include <iterator>
 
-namespace nvstm
+namespace rtxts
 {
     class BitArray
     {
@@ -225,4 +225,4 @@ namespace nvstm
     {
         return ((value + (alignment - 1)) / alignment) * alignment;
     }
-} // nvstm
+} // rtxts

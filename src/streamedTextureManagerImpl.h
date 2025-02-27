@@ -30,7 +30,7 @@
 
 typedef uint32_t ObjectType;
 
-namespace nvstm
+namespace rtxts
 {
     struct MipLevelTilingDesc
     {
@@ -191,4 +191,4 @@ namespace nvstm
         ObjectContainer<TextureReference, StreamedTextureState> m_streamedTextures;
         std::vector<StreamedTextureDesc> m_streamedTextureDescs;
     };
-} // nvstm
+} // rtxts

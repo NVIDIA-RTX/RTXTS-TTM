@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <vector>
 
-namespace nvstm
+namespace rtxts
 {
     typedef uint32_t TileType;
     typedef uint8_t MipLevelType;
@@ -148,4 +148,4 @@ namespace nvstm
     };
 
     StreamedTextureManager* CreateStreamedTextureManager(const StreamedTextureManagerDesc& desc);
-} // nvstm
+} // rtxts
