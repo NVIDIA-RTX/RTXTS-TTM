@@ -18,7 +18,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 
-project(nvstm)
+project(rtxts)
 
 file(GLOB nvstm_include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
@@ -26,7 +26,7 @@ file(GLOB nvstm_src
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
-add_library(nvstm STATIC
+add_library(rtxts STATIC
         ${nvstm_include}
         ${nvstm_src})
 
