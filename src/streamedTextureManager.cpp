@@ -124,7 +124,9 @@ namespace nvstm
                         if (x >= desc.mipLevelTilingDescs[0].tilesX || y >= desc.mipLevelTilingDescs[0].tilesY)
                             continue;
 
-                        data[y * desc.mipLevelTilingDescs[0].tilesX + x] = (uint8_t)mipLevel;
+                        uint32_t index = y * desc.mipLevelTilingDescs[0].tilesX + x;
+                        if (data[index] == mipLevel + 1)
+                            data[index] = (uint8_t)mipLevel;
                     }
                 }
             }
