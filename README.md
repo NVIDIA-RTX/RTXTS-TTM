@@ -26,3 +26,11 @@ The approach scales well with the complexity of the scene. Whether you’re deal
 RTXTS is distributed in full sources along with [integration guide][RtxtsIntegrationGuide].
 
 [RtxtsIntegrationGuide]: ./docs/Integration.md
+
+## Support
+
+E-mail: rtxts-sdk-support@nvidia.com
+
+## License
+
+[NVIDIA RTX SDKs LICENSE](license.txt)
