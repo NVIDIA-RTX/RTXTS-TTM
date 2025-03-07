@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+* Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
 * copy of this software and associated documentation files (the "Software"),
@@ -39,20 +39,20 @@ namespace rtxts
 
     struct TiledLevelDesc
     {
-        TileType widthInTiles;
-        TileType heightInTiles;
+        TileType widthInTiles;           // width of the level in tiles
+        TileType heightInTiles;          // height of the level in tiles
     };
 
     struct TiledTextureDesc
     {
-        uint32_t textureWidth;
-        uint32_t textureHeight;
+        uint32_t textureWidth;           // width of the texture in texels
+        uint32_t textureHeight;          // height of the texture in texels
         TiledLevelDesc* tiledLevelDescs; // used for regular(unpacked) mip levels
-        uint32_t regularMipLevelsNum;
-        uint32_t packedMipLevelsNum;
-        uint32_t packedTilesNum;
-        uint32_t tileWidth;
-        uint32_t tileHeight;
+        uint32_t regularMipLevelsNum;    // number of unpacked mip levels
+        uint32_t packedMipLevelsNum;     // number of packed mip levels
+        uint32_t packedTilesNum;         // number of tiles for packed mip levels
+        uint32_t tileWidth;              // width of a tile in texels
+        uint32_t tileHeight;             // height of a tile in texels
     };
 
     struct SamplerFeedbackDesc
@@ -119,28 +119,42 @@ namespace rtxts
     public:
         virtual ~StreamedTextureManager() {};
 
+        // Add a new texture
         virtual void AddStreamedTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) = 0;
+
+        // Remove a texture
         virtual void RemoveStreamedTexture(uint32_t textureId) = 0;
 
+        // Computes the internal state of tile streaming requests using sampler feedback data
+        // After this, call GetTilesToMap()
         virtual void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timeStamp, uint32_t timeout) = 0;
 
         // Get a list of tiles that need to be mapped and updated.
         // Once tiles are ready, UpdateTilesMapping() should be called to update the internal state
         virtual void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) = 0;
+
+        // Updates internal state of the texture after tiles are mapped
         virtual void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) = 0;
 
         // Get a list of tiles that are no longer requested and should be unmapped from the texture
         virtual void GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices) = 0;
 
+        // Writes min mip data to the texture
         virtual void WriteMinMipData(uint32_t textureId, uint8_t* data) = 0;
 
+        // Finds a condidate tile to be defragmented (moved into a heap with free space)
         virtual TileAllocationInHeap GetFragmentedTextureTile(TileAllocation& prevTileAllocation) = 0;
 
-        // Helper functions
+        // Get the description of a texture
         virtual TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const = 0;
+
+        // Can this tile currently be moved (for defragmentation)
         virtual bool IsMovableTile(uint32_t textureId, TileType tileIndex) const = 0;
 
+        // Get the coordinates of a tile
         virtual const std::vector<TileCoord>& GetTileCoordinates(uint32_t textureId) const = 0;
+
+        // Get the allocations of a texture
         virtual const std::vector<TileAllocation>& GetTileAllocations(uint32_t textureId) const = 0;
 
         // Statistics

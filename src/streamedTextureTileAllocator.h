@@ -116,7 +116,7 @@ namespace rtxts
 
         TileAllocationInHeap GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const;
 
-    protected:
+    private:
         std::vector<std::shared_ptr<TiledHeap>> m_heaps;
         HeapAllocator* m_pHeapAllocator = nullptr;
         const uint32_t m_heapSizeInTiles;

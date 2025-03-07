@@ -205,7 +205,7 @@ namespace rtxts
             return SetBitIterator(this, -1, true);
         }
 
-    protected:
+    private:
         uint32_t m_bitsNum;
         uint32_t m_wordsNum;
         std::vector<uint64_t> m_words;
