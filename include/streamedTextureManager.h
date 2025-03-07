@@ -62,6 +62,7 @@ namespace rtxts
         int32_t mipLevelBias = 0;
     };
 
+    // Abstract class for allocating and releasing heaps on the application side
     class HeapAllocator
     {
     public:
