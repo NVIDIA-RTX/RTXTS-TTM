@@ -1,31 +1,23 @@
-## Overview
+# RTX Texture Streaming
 
-RTX Texture Streaming (RTXTS) library is a specialized module designed to efficiently manage and orchestrate texture tiles allocation and streaming for sparse Direct3D12 textures. Library functionality is tightly coupled with Direct3D12 concept of tiled resources and sampler feedback functionality [https://microsoft.github.io/DirectX-Specs/d3d/SamplerFeedback.html]. Tiled resources are more memory-efficient compared to regular textures, which need all memory allocated during creation. With tiled resources, GPU memory can be managed with fine granularity. This selective residency method reduces memory usage and enhances performance, particularly in cases involving ultra-high-resolution or large textures.
+The RTX Texture Streaming (RTXTS) library is designed to manage and orchestrate tile allocation and streaming for sparse textures. Library functionality is tightly coupled with the Direct3D 12 concepts of [Tiled Resources](https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_tiled_resources_tier) and [Sampler Feedback](https://microsoft.github.io/DirectX-Specs/d3d/SamplerFeedback.html). Tiled resources can be much more memory-efficient compared than regular textures as their memory usage can be managed with a finer granularity. This selective residency reduces memory usage and may enhance performance, particularly in cases involving ultra-high-resolution textures in dense scenes.
 
 ## Key Features and Benefits
 
 * Lightweight CPU-side utility library
-* Utilizes sampler feedback data to build and update a list of tiles needing mapping or eviction
-* Assists with resource creation
-* Drives heaps allocations/deallocations
+* Utilizes sampler feedback data to build and update a list of tiles needing allocation or eviction
+* Assists with tiled resource creation and management
+* Drives heap allocations/deallocations
+* Configurable tile allocation timeout
 * Optionally generates data for MinMip texture
 
-### Extensibility and Flexibility  
-RTXTS library provides a clear and robust API that enables developers to integrate custom streaming logic and memory management polices.
+## Sample
 
-### Optimized Memory Usage
-By loading only the required portions of a texture, the library reduces the overall memory footprint, allowing for higher resolution textures and more complex scenes.
-
-### Improved Performance
-Dynamic tile management leads to faster load times and smoother transitions, which is critical for games and other real-time applications.
-
-### Scalability
-The approach scales well with the complexity of the scene. Whether you’re dealing with a small scene or a vast open world, the library can be adapted to the available GPU memory pool, ensuring consistent performance.
+An sample using this library can be found here: https://github.com/NVIDIA-RTX/RTXTS
  
 ## Distribution
-RTXTS is distributed in full sources along with [integration guide][RtxtsIntegrationGuide].
 
-[RtxtsIntegrationGuide]: ./docs/Integration.md
+RTXTS is distributed in full sources along with an integration guide.
 
 ## Support
 
