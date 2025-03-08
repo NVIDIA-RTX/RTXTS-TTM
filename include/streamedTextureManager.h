@@ -68,7 +68,7 @@ namespace rtxts
     public:
         virtual ~HeapAllocator() {};
 
-        virtual void AllocateHeap(uint64_t heapSize, uint32_t& heapId) = 0;
+        virtual void AllocateHeap(uint64_t heapSizeInBytes, uint32_t& heapId) = 0;
         virtual void ReleaseHeap(uint32_t heapId) = 0;
     };
 
@@ -109,10 +109,8 @@ namespace rtxts
 
     struct Statistics
     {
-        uint32_t allocatedTilesNum;
-        uint32_t totalTilesNum;
-        uint64_t heapAllocatedBytes;
-        uint64_t heapTotalBytes;
+        uint32_t totalTilesNum;      // Total number of tiles
+        uint32_t allocatedTilesNum;  // Number of allocated tiles
     };
 
     class StreamedTextureManager

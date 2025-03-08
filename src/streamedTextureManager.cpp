@@ -25,7 +25,8 @@
 namespace rtxts
 {
     StreamedTextureManagerImpl::StreamedTextureManagerImpl(const StreamedTextureManagerDesc& streamedTextureManagerDesc)
-        : m_streamedTextureManagerDesc(streamedTextureManagerDesc)
+        : m_streamedTextureManagerDesc(streamedTextureManagerDesc),
+          m_totalTilesNum(0)
     {
         m_tileAllocator = std::make_shared<TileAllocator>(streamedTextureManagerDesc.heapTilesCapacity, 65536, streamedTextureManagerDesc.pHeapAllocator);
     }
@@ -43,6 +44,10 @@ namespace rtxts
             return;
 
         InitStreamedTexture(texture, tiledTextureDesc);
+
+        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        m_totalTilesNum += desc.packedTilesNum + desc.regularTilesNum;
     }
 
     void StreamedTextureManagerImpl::RemoveStreamedTexture(uint32_t textureId)
@@ -54,6 +59,9 @@ namespace rtxts
         StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
         for (auto& tileAllocation : streamedTextureState.tileAllocations)
             m_tileAllocator->FreeTile(tileAllocation);
+
+        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        m_totalTilesNum -= desc.packedTilesNum + desc.regularTilesNum;
 
         streamedTextureState = {};
 
@@ -210,10 +218,8 @@ namespace rtxts
 
         if (m_tileAllocator)
         {
+            statistics.totalTilesNum = m_totalTilesNum;
             statistics.allocatedTilesNum = m_tileAllocator->GetAllocatedTilesNum();
-            statistics.totalTilesNum = m_tileAllocator->GetTotalTilesNum();
-            statistics.heapAllocatedBytes = m_tileAllocator->GetAllocatedBytes();
-            statistics.heapTotalBytes = m_tileAllocator->GetTotalBytes();
         }
 
         return statistics;

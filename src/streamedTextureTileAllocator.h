@@ -99,21 +99,6 @@ namespace rtxts
             return m_allocatedTilesNum;
         }
 
-        uint32_t GetTotalTilesNum()
-        {
-            return GetHeapsNum() * m_heapSizeInTiles;
-        }
-
-        uint64_t GetAllocatedBytes()
-        {
-            return GetAllocatedTilesNum() * m_tileSizeInBytes;
-        }
-
-        uint64_t GetTotalBytes()
-        {
-            return GetTotalTilesNum() * m_tileSizeInBytes;
-        }
-
         TileAllocationInHeap GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const;
 
     private:

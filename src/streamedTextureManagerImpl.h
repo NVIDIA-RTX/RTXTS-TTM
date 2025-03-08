@@ -190,5 +190,7 @@ namespace rtxts
 
         ObjectContainer<TextureReference, StreamedTextureState> m_streamedTextures;
         std::vector<StreamedTextureDesc> m_streamedTextureDescs;
+
+        uint32_t m_totalTilesNum;
     };
 } // rtxts
