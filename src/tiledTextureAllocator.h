@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "../include/rtxts-ttm/streamedTextureManager.h"
+#include "../include/rtxts-ttm/tiledTextureManager.h"
 
 #include <vector>
 #include <set>
@@ -87,7 +87,7 @@ namespace rtxts
             return m_allocatedTilesNum;
         }
 
-        TileAllocationInHeap GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const;
+        TileAllocationInHeap GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const;
 
     private:
         std::vector<std::shared_ptr<TiledHeap>> m_heaps;

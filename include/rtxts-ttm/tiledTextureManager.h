@@ -60,7 +60,7 @@ namespace rtxts
         virtual void ReleaseHeap(uint32_t heapId) = 0;
     };
 
-    struct StreamedTextureManagerDesc
+    struct TiledTextureManagerDesc
     {
         bool alwaysMapPackedTiles = true;
         HeapAllocator* pHeapAllocator = nullptr;
@@ -101,16 +101,16 @@ namespace rtxts
         uint32_t allocatedTilesNum;  // Number of allocated tiles
     };
 
-    class StreamedTextureManager
+    class TiledTextureManager
     {
     public:
-        virtual ~StreamedTextureManager() {};
+        virtual ~TiledTextureManager() {};
 
         // Add a new texture to the manager
-        virtual void AddStreamedTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) = 0;
+        virtual void AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) = 0;
 
         // Remove a texture from the manager
-        virtual void RemoveStreamedTexture(uint32_t textureId) = 0;
+        virtual void RemoveTiledTexture(uint32_t textureId) = 0;
 
         // Computes the internal state of tile streaming requests using provided sampler feedback data
         // After this, call GetTilesToMap()
@@ -148,5 +148,5 @@ namespace rtxts
         virtual Statistics GetStatistics() const = 0;
     };
 
-    StreamedTextureManager* CreateStreamedTextureManager(const StreamedTextureManagerDesc& desc);
+    TiledTextureManager* CreateTiledTextureManager(const TiledTextureManagerDesc& desc);
 } // rtxts

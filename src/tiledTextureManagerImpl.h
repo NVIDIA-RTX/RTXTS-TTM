@@ -12,9 +12,9 @@
 
 #define ENABLE_STATISTICS 1
 
-#include "../include/rtxts-ttm/streamedTextureManager.h"
-#include "streamedTextureTileHelper.h"
-#include "streamedTextureTileAllocator.h"
+#include "../include/rtxts-ttm/tiledTextureManager.h"
+#include "tiledTextureManagerHelper.h"
+#include "tiledTextureAllocator.h"
 
 typedef uint32_t ObjectType;
 
@@ -27,7 +27,7 @@ namespace rtxts
         TileType tilesY = 0;
     };
 
-    struct StreamedTextureDesc
+    struct TiledTextureInternalDesc
     {
         TileType regularTilesNum = 0;
         TileType packedTilesNum = 0;
@@ -45,7 +45,7 @@ namespace rtxts
         std::vector<TileType> tileIndexToLowerMipTileIndex;
     };
 
-    struct StreamedTextureState
+    struct TiledTextureState
     {
         uint32_t allocatedUnpackedTilesNum = 0;
         uint16_t descriptorIndex = UINT16_MAX;
@@ -135,15 +135,15 @@ namespace rtxts
         std::vector<ObjectDataType> m_objectData;
     };
 
-    class StreamedTextureManagerImpl : public StreamedTextureManager
+    class TiledTextureManagerImpl : public TiledTextureManager
     {
     public:
-        ~StreamedTextureManagerImpl() override;
+        ~TiledTextureManagerImpl() override;
 
-        StreamedTextureManagerImpl(const StreamedTextureManagerDesc& desc);
+        TiledTextureManagerImpl(const TiledTextureManagerDesc& desc);
 
-        void AddStreamedTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) override;
-        void RemoveStreamedTexture(uint32_t textureId) override;
+        void AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) override;
+        void RemoveTiledTexture(uint32_t textureId) override;
 
         void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout) override;
 
@@ -165,19 +165,19 @@ namespace rtxts
         Statistics GetStatistics() const override;
 
     private:
-        void InitStreamedTexture(TextureReference& texture, const TiledTextureDesc& tiledTextureDesc);
-        void UpdateStreamedTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timeStamp, uint32_t timeout);
+        void InitTiledTexture(TextureReference& texture, const TiledTextureDesc& tiledTextureDesc);
+        void UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timeStamp, uint32_t timeout);
 
-        uint32_t GetTileIndex(const StreamedTextureDesc& streamedTextureDesc, const TileCoord& tileCoord) const;
+        uint32_t GetTileIndex(const TiledTextureInternalDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 
-        void AllocateTile(StreamedTextureState& streamedTextureState, uint32_t textureId, TileType tileIndex);
-        void FreeTile(StreamedTextureState& streamedTextureState, TileType tileIndex);
+        void AllocateTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex);
+        void FreeTile(TiledTextureState& tiledTextureState, TileType tileIndex);
 
         std::shared_ptr<TileAllocator> m_tileAllocator;
-        const StreamedTextureManagerDesc m_streamedTextureManagerDesc;
+        const TiledTextureManagerDesc m_tiledTextureManagerDesc;
 
-        ObjectContainer<TextureReference, StreamedTextureState> m_streamedTextures;
-        std::vector<StreamedTextureDesc> m_streamedTextureDescs;
+        ObjectContainer<TextureReference, TiledTextureState> m_tiledTextures;
+        std::vector<TiledTextureInternalDesc> m_tiledTextureDescs;
 
         uint32_t m_totalTilesNum;
     };

@@ -8,92 +8,92 @@
  * license agreement from NVIDIA CORPORATION is strictly prohibited.
  */
 
-#include "streamedTextureManagerImpl.h"
+#include "tiledTextureManagerImpl.h"
 
 namespace rtxts
 {
-    StreamedTextureManagerImpl::StreamedTextureManagerImpl(const StreamedTextureManagerDesc& streamedTextureManagerDesc)
-        : m_streamedTextureManagerDesc(streamedTextureManagerDesc),
+    TiledTextureManagerImpl::TiledTextureManagerImpl(const TiledTextureManagerDesc& tiledTextureManagerDesc)
+        : m_tiledTextureManagerDesc(tiledTextureManagerDesc),
           m_totalTilesNum(0)
     {
-        m_tileAllocator = std::make_shared<TileAllocator>(streamedTextureManagerDesc.heapTilesCapacity, 65536, streamedTextureManagerDesc.pHeapAllocator);
+        m_tileAllocator = std::make_shared<TileAllocator>(tiledTextureManagerDesc.heapTilesCapacity, 65536, tiledTextureManagerDesc.pHeapAllocator);
     }
 
-    StreamedTextureManagerImpl::~StreamedTextureManagerImpl()
+    TiledTextureManagerImpl::~TiledTextureManagerImpl()
     {
 
     }
 
-    void StreamedTextureManagerImpl::AddStreamedTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId)
+    void TiledTextureManagerImpl::AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId)
     {
-        TextureReference texture = m_streamedTextures.Create();
+        TextureReference texture = m_tiledTextures.Create();
         textureId = texture.Id();
         if (!texture.IsValid())
             return;
 
-        InitStreamedTexture(texture, tiledTextureDesc);
+        InitTiledTexture(texture, tiledTextureDesc);
 
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
-        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
         m_totalTilesNum += desc.packedTilesNum + desc.regularTilesNum;
     }
 
-    void StreamedTextureManagerImpl::RemoveStreamedTexture(uint32_t textureId)
+    void TiledTextureManagerImpl::RemoveTiledTexture(uint32_t textureId)
     {
         TextureReference texture({ textureId });
         if (!texture.IsValid())
             return;
 
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
-        for (auto& tileAllocation : streamedTextureState.tileAllocations)
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
+        for (auto& tileAllocation : tiledTextureState.tileAllocations)
             m_tileAllocator->FreeTile(tileAllocation);
 
-        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
         m_totalTilesNum -= desc.packedTilesNum + desc.regularTilesNum;
 
-        streamedTextureState = {};
+        tiledTextureState = {};
 
-        m_streamedTextures.Release(texture);
+        m_tiledTextures.Release(texture);
     }
 
-    void StreamedTextureManagerImpl::UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout)
+    void TiledTextureManagerImpl::UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout)
     {
         TextureReference texture({ textureId });
-        UpdateStreamedTexture(texture, samplerFeedbackDesc, timestamp, timeout);
+        UpdateTiledTexture(texture, samplerFeedbackDesc, timestamp, timeout);
     }
 
-    void StreamedTextureManagerImpl::GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices)
+    void TiledTextureManagerImpl::GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices)
     {
         TextureReference texture({ textureId });
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
-        tileIndices = streamedTextureState.tilesToMap;
-        streamedTextureState.tilesToMap.clear();
+        tileIndices = tiledTextureState.tilesToMap;
+        tiledTextureState.tilesToMap.clear();
     }
 
-    void StreamedTextureManagerImpl::UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices)
+    void TiledTextureManagerImpl::UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices)
     {
         TextureReference texture({ textureId });
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
         for (auto& tileIndex : tileIndices)
-            streamedTextureState.mappedBits.SetBit(tileIndex);
+            tiledTextureState.mappedBits.SetBit(tileIndex);
     }
 
-    void StreamedTextureManagerImpl::GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices)
+    void TiledTextureManagerImpl::GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices)
     {
         TextureReference texture({ textureId });
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
-        tileIndices = streamedTextureState.tilesToUnmap;
-        streamedTextureState.tilesToUnmap.clear();
+        tileIndices = tiledTextureState.tilesToUnmap;
+        tiledTextureState.tilesToUnmap.clear();
     }
 
-    void StreamedTextureManagerImpl::WriteMinMipData(uint32_t textureId, uint8_t* data)
+    void TiledTextureManagerImpl::WriteMinMipData(uint32_t textureId, uint8_t* data)
     {
         TextureReference texture({ textureId });
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
-        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
 
         uint32_t minMipTilesNum = desc.regularTilesNum ? desc.mipLevelTilingDescs[0].tilesX * desc.mipLevelTilingDescs[0].tilesY : 1;
         // Clear with the highest packed MIP index
@@ -104,7 +104,7 @@ namespace rtxts
         // Iterate backwards (lower res to higher res tiles) and only increment if the mip chain is contiguous to avoid artifacts with missing tiles in the middle
         if (desc.regularTilesNum)
         {
-            for (auto it = BitArray::SetBitIterator(&streamedTextureState.mappedBits, desc.regularTilesNum - 1, true); it != streamedTextureState.mappedBits.rend(); it--)
+            for (auto it = BitArray::SetBitIterator(&tiledTextureState.mappedBits, desc.regularTilesNum - 1, true); it != tiledTextureState.mappedBits.rend(); it--)
             {
                 uint32_t tileIndex = *it;
                 TileCoord coord = desc.tileIndexToTileCoord[tileIndex];
@@ -129,21 +129,21 @@ namespace rtxts
         }
     }
 
-    TileAllocationInHeap StreamedTextureManagerImpl::GetFragmentedTextureTile(TileAllocation& prevTileAllocation)
+    TileAllocationInHeap TiledTextureManagerImpl::GetFragmentedTextureTile(TileAllocation& prevTileAllocation)
     {
-        TileAllocationInHeap tileAllocation = m_tileAllocator->GetFragmentedTextureTile((StreamedTextureManager*)this);
+        TileAllocationInHeap tileAllocation = m_tileAllocator->GetFragmentedTextureTile((TiledTextureManager*)this);
         if (tileAllocation.textureId)
         {
             TextureReference texture({ tileAllocation.textureId });
-            StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+            TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
             // Free tile from its current allocation
-            TileAllocation oldAllocation = streamedTextureState.tileAllocations[tileAllocation.textureTileIndex];
+            TileAllocation oldAllocation = tiledTextureState.tileAllocations[tileAllocation.textureTileIndex];
             m_tileAllocator->FreeTile(oldAllocation);
 
             // Allocate tile again
-            streamedTextureState.tileAllocations[tileAllocation.textureTileIndex] = m_tileAllocator->AllocateTile(tileAllocation.textureId, tileAllocation.textureTileIndex);
-            streamedTextureState.mappedBits.ClearBit(tileAllocation.textureTileIndex);
+            tiledTextureState.tileAllocations[tileAllocation.textureTileIndex] = m_tileAllocator->AllocateTile(tileAllocation.textureId, tileAllocation.textureTileIndex);
+            tiledTextureState.mappedBits.ClearBit(tileAllocation.textureTileIndex);
 
             prevTileAllocation = oldAllocation;
         }
@@ -151,27 +151,27 @@ namespace rtxts
         return tileAllocation;
     }
 
-    const std::vector<TileCoord>& StreamedTextureManagerImpl::GetTileCoordinates(uint32_t textureId) const
+    const std::vector<TileCoord>& TiledTextureManagerImpl::GetTileCoordinates(uint32_t textureId) const
     {
         TextureReference texture({ textureId });
-        const StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        const TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
-        return m_streamedTextureDescs[streamedTextureState.descriptorIndex].tileIndexToTileCoord;
+        return m_tiledTextureDescs[tiledTextureState.descriptorIndex].tileIndexToTileCoord;
     }
 
-    const std::vector<TileAllocation>& StreamedTextureManagerImpl::GetTileAllocations(uint32_t textureId) const
+    const std::vector<TileAllocation>& TiledTextureManagerImpl::GetTileAllocations(uint32_t textureId) const
     {
         TextureReference texture({ textureId });
-        const StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        const TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
-        return streamedTextureState.tileAllocations;
+        return tiledTextureState.tileAllocations;
     }
 
-    TextureDesc StreamedTextureManagerImpl::GetTextureDesc(uint32_t textureId, TextureTypes textureType) const
+    TextureDesc TiledTextureManagerImpl::GetTextureDesc(uint32_t textureId, TextureTypes textureType) const
     {
         TextureReference texture({ textureId });
-        const StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
-        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        const TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
 
         TextureDesc textureDesc = {};
         switch (textureType)
@@ -191,16 +191,16 @@ namespace rtxts
         return textureDesc;
     }
 
-    bool StreamedTextureManagerImpl::IsMovableTile(uint32_t textureId, TileType tileIndex) const
+    bool TiledTextureManagerImpl::IsMovableTile(uint32_t textureId, TileType tileIndex) const
     {
         TextureReference texture({ textureId });
-        const StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
-        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        const TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
 
-        return (tileIndex < desc.regularTilesNum) && (streamedTextureState.mappedBits.GetBit(tileIndex));
+        return (tileIndex < desc.regularTilesNum) && (tiledTextureState.mappedBits.GetBit(tileIndex));
     }
 
-    Statistics StreamedTextureManagerImpl::GetStatistics() const
+    Statistics TiledTextureManagerImpl::GetStatistics() const
     {
         Statistics statistics = {};
 
@@ -213,9 +213,9 @@ namespace rtxts
         return statistics;
     }
 
-    void StreamedTextureManagerImpl::InitStreamedTexture(TextureReference& texture, const TiledTextureDesc& tiledTextureDesc)
+    void TiledTextureManagerImpl::InitTiledTexture(TextureReference& texture, const TiledTextureDesc& tiledTextureDesc)
     {
-        StreamedTextureDesc desc = {};
+        TiledTextureInternalDesc desc = {};
         desc.regularTilesNum = 0;
         desc.mipLevelTilingDescs.resize(tiledTextureDesc.regularMipLevelsNum);
         for (uint32_t i = 0; i < tiledTextureDesc.regularMipLevelsNum; ++i)
@@ -256,26 +256,26 @@ namespace rtxts
         }
 
         // Init streamed texture state
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
         uint32_t tilesNum = desc.regularTilesNum + desc.packedTilesNum;
-        streamedTextureState.lastRequestedTime.resize(tilesNum);
-        streamedTextureState.tileAllocations.resize(tilesNum);
-        streamedTextureState.allocatedBits.Init(tilesNum);
-        streamedTextureState.mappedBits.Init(tilesNum);
+        tiledTextureState.lastRequestedTime.resize(tilesNum);
+        tiledTextureState.tileAllocations.resize(tilesNum);
+        tiledTextureState.allocatedBits.Init(tilesNum);
+        tiledTextureState.mappedBits.Init(tilesNum);
 
-        if (m_streamedTextureManagerDesc.alwaysMapPackedTiles)
+        if (m_tiledTextureManagerDesc.alwaysMapPackedTiles)
             for (uint32_t i = 0; i < tiledTextureDesc.packedTilesNum; ++i)
-                AllocateTile(streamedTextureState, texture.Id(), desc.regularTilesNum + i);
+                AllocateTile(tiledTextureState, texture.Id(), desc.regularTilesNum + i);
 
-        uint32_t descsNum = (uint32_t)m_streamedTextureDescs.size();
+        uint32_t descsNum = (uint32_t)m_tiledTextureDescs.size();
         for (uint32_t i = 0; i < descsNum; ++i)
         {
-            if (std::memcmp(&m_streamedTextureDescs[i], &desc, offsetof(StreamedTextureDesc, feedbackTilesY) + sizeof(StreamedTextureDesc::feedbackTilesY)) == 0)
+            if (std::memcmp(&m_tiledTextureDescs[i], &desc, offsetof(TiledTextureInternalDesc, feedbackTilesY) + sizeof(TiledTextureInternalDesc::feedbackTilesY)) == 0)
             {
                 uint32_t blockSize = tiledTextureDesc.regularMipLevelsNum * sizeof(MipLevelTilingDesc);
-                if (!tiledTextureDesc.regularMipLevelsNum || std::memcmp(&m_streamedTextureDescs[i].mipLevelTilingDescs.front(), &desc.mipLevelTilingDescs.front(), blockSize) == 0)
+                if (!tiledTextureDesc.regularMipLevelsNum || std::memcmp(&m_tiledTextureDescs[i].mipLevelTilingDescs.front(), &desc.mipLevelTilingDescs.front(), blockSize) == 0)
                 {
-                    streamedTextureState.descriptorIndex = i;
+                    tiledTextureState.descriptorIndex = i;
                     return;
                 }
             }
@@ -320,21 +320,21 @@ namespace rtxts
             desc.tileIndexToTileCoord[desc.regularTilesNum + i].mipLevel = packedLevelIndex;
         }
 
-        streamedTextureState.descriptorIndex = descsNum;
-        m_streamedTextureDescs.push_back(desc);
+        tiledTextureState.descriptorIndex = descsNum;
+        m_tiledTextureDescs.push_back(desc);
     }
 
-    void StreamedTextureManagerImpl::UpdateStreamedTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout)
+    void TiledTextureManagerImpl::UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout)
     {
-        StreamedTextureState& streamedTextureState = m_streamedTextures.GetData(texture);
-        const StreamedTextureDesc& desc = m_streamedTextureDescs[streamedTextureState.descriptorIndex];
+        TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
 
-        streamedTextureState.requestedTilesNum = desc.packedTilesNum;
+        tiledTextureState.requestedTilesNum = desc.packedTilesNum;
         if (desc.regularMipLevelsNum == 0)
             return;
 
-        streamedTextureState.tilesToMap.clear();
-        streamedTextureState.tilesToUnmap.clear();
+        tiledTextureState.tilesToMap.clear();
+        tiledTextureState.tilesToUnmap.clear();
 
         BitArray requestedBits;
         requestedBits.Init(desc.regularTilesNum + desc.packedTilesNum);
@@ -380,27 +380,27 @@ namespace rtxts
         }
 
         bool requestedUnpackedTiles = firstTileIndex != UINT32_MAX;
-        if (requestedUnpackedTiles || streamedTextureState.allocatedUnpackedTilesNum)
+        if (requestedUnpackedTiles || tiledTextureState.allocatedUnpackedTilesNum)
         {
             for (TileType tileIndex = 0; tileIndex < desc.regularTilesNum; ++tileIndex)
             {
                 if (requestedBits.GetBit(tileIndex))
                 {
-                    streamedTextureState.lastRequestedTime[tileIndex] = timestamp;
-                    streamedTextureState.requestedTilesNum++;
+                    tiledTextureState.lastRequestedTime[tileIndex] = timestamp;
+                    tiledTextureState.requestedTilesNum++;
                 }
-                else if (streamedTextureState.allocatedBits.GetBit(tileIndex))
+                else if (tiledTextureState.allocatedBits.GetBit(tileIndex))
                 {
                     // Tile allocated but not actively requested anymore
-                    uint32_t timeDelta = timestamp - streamedTextureState.lastRequestedTime[tileIndex];
+                    uint32_t timeDelta = timestamp - tiledTextureState.lastRequestedTime[tileIndex];
                     if (timeDelta >= timeout)
                     {
-                        if (streamedTextureState.mappedBits.GetBit(tileIndex))
+                        if (tiledTextureState.mappedBits.GetBit(tileIndex))
                         {
-                            FreeTile(streamedTextureState, tileIndex);
-                            streamedTextureState.tilesToUnmap.push_back(tileIndex);
+                            FreeTile(tiledTextureState, tileIndex);
+                            tiledTextureState.tilesToUnmap.push_back(tileIndex);
 
-                            streamedTextureState.allocatedUnpackedTilesNum--;
+                            tiledTextureState.allocatedUnpackedTilesNum--;
                         }
                     }
                 }
@@ -413,46 +413,46 @@ namespace rtxts
             for (uint32_t packedTileIndex = 0; packedTileIndex < desc.packedTilesNum; ++packedTileIndex)
                 requestedBits.SetBit(desc.regularTilesNum + packedTileIndex);
 
-            BitArray newTilesBits = (requestedBits ^ streamedTextureState.allocatedBits) & requestedBits;
+            BitArray newTilesBits = (requestedBits ^ tiledTextureState.allocatedBits) & requestedBits;
             for (uint32_t tileIndex : newTilesBits)
             {
-                AllocateTile(streamedTextureState, texture.Id(), tileIndex);
+                AllocateTile(tiledTextureState, texture.Id(), tileIndex);
 
                 if (tileIndex < desc.regularTilesNum)
-                    streamedTextureState.allocatedUnpackedTilesNum++;
+                    tiledTextureState.allocatedUnpackedTilesNum++;
             }
         }
     }
 
-    uint32_t StreamedTextureManagerImpl::GetTileIndex(const StreamedTextureDesc& streamedTextureDesc, const TileCoord& tileCood) const
+    uint32_t TiledTextureManagerImpl::GetTileIndex(const TiledTextureInternalDesc& tiledTextureDesc, const TileCoord& tileCood) const
     {
-        if (tileCood.mipLevel >= streamedTextureDesc.regularMipLevelsNum)
-            return streamedTextureDesc.regularTilesNum;
+        if (tileCood.mipLevel >= tiledTextureDesc.regularMipLevelsNum)
+            return tiledTextureDesc.regularTilesNum;
 
-        uint32_t start = streamedTextureDesc.mipLevelTilingDescs[tileCood.mipLevel].firtsTileIndex;
-        uint32_t offset = tileCood.y * streamedTextureDesc.mipLevelTilingDescs[tileCood.mipLevel].tilesX + tileCood.x;
+        uint32_t start = tiledTextureDesc.mipLevelTilingDescs[tileCood.mipLevel].firtsTileIndex;
+        uint32_t offset = tileCood.y * tiledTextureDesc.mipLevelTilingDescs[tileCood.mipLevel].tilesX + tileCood.x;
 
         return start + offset;
     }
 
-    void StreamedTextureManagerImpl::AllocateTile(StreamedTextureState& streamedTextureState, uint32_t textureId, TileType tileIndex)
+    void TiledTextureManagerImpl::AllocateTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex)
     {
-        streamedTextureState.tileAllocations[tileIndex] = m_tileAllocator->AllocateTile(textureId, tileIndex);
-        streamedTextureState.allocatedBits.SetBit(tileIndex);
-        streamedTextureState.tilesToMap.push_back(tileIndex);
+        tiledTextureState.tileAllocations[tileIndex] = m_tileAllocator->AllocateTile(textureId, tileIndex);
+        tiledTextureState.allocatedBits.SetBit(tileIndex);
+        tiledTextureState.tilesToMap.push_back(tileIndex);
     }
 
-    void StreamedTextureManagerImpl::FreeTile(StreamedTextureState& streamedTextureState, TileType tileIndex)
+    void TiledTextureManagerImpl::FreeTile(TiledTextureState& tiledTextureState, TileType tileIndex)
     {
-        m_tileAllocator->FreeTile(streamedTextureState.tileAllocations[tileIndex]);
-        streamedTextureState.tileAllocations[tileIndex] = {};
+        m_tileAllocator->FreeTile(tiledTextureState.tileAllocations[tileIndex]);
+        tiledTextureState.tileAllocations[tileIndex] = {};
 
-        streamedTextureState.allocatedBits.ClearBit(tileIndex);
-        streamedTextureState.mappedBits.ClearBit(tileIndex);
+        tiledTextureState.allocatedBits.ClearBit(tileIndex);
+        tiledTextureState.mappedBits.ClearBit(tileIndex);
     }
 
-    StreamedTextureManager* CreateStreamedTextureManager(const StreamedTextureManagerDesc& desc)
+    TiledTextureManager* CreateTiledTextureManager(const TiledTextureManagerDesc& desc)
     {
-        return new StreamedTextureManagerImpl(desc);
+        return new TiledTextureManagerImpl(desc);
     }
 } // rtxts

@@ -8,7 +8,7 @@
  * license agreement from NVIDIA CORPORATION is strictly prohibited.
  */
 
-#include "streamedTextureTileAllocator.h"
+#include "tiledTextureAllocator.h"
 
 namespace rtxts
 {
@@ -111,7 +111,7 @@ namespace rtxts
         }
     }
 
-    TileAllocationInHeap TileAllocator::GetFragmentedTextureTile(StreamedTextureManager* streamedTextureManager) const
+    TileAllocationInHeap TileAllocator::GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const
     {
         TileAllocationInHeap tileAllocation = {};
 
@@ -142,7 +142,7 @@ namespace rtxts
                 for (auto& heapAllocationIndex : heap->GetUsedTileSet())
                 {
                     auto tileAllocation = heap->GetAllocations()[heapAllocationIndex];
-                    if (streamedTextureManager->IsMovableTile(tileAllocation.textureId, tileAllocation.textureTileIndex))
+                    if (tiledTextureManager->IsMovableTile(tileAllocation.textureId, tileAllocation.textureTileIndex))
                     {
                         return tileAllocation;
                     }
