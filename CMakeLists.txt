@@ -6,14 +6,14 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
-project(rtxts)
+project(rtxts-ttm)
 
-file(GLOB rtxts_include
+file(GLOB rtxts-ttm_include
     ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
-file(GLOB rtxts_src
+file(GLOB rtxts-ttm_src
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
 
-add_library(rtxts STATIC
-        ${rtxts_include}
-        ${rtxts_src})
+add_library(rtxts-ttm STATIC
+        ${rtxts-ttm_include}
+        ${rtxts-ttm_src})
