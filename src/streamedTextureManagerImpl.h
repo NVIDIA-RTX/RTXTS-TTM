@@ -12,7 +12,7 @@
 
 #define ENABLE_STATISTICS 1
 
-#include "../include/streamedTextureManager.h"
+#include "../include/rtxts-ttm/streamedTextureManager.h"
 #include "streamedTextureTileHelper.h"
 #include "streamedTextureTileAllocator.h"
 

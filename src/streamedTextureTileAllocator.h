@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "../include/streamedTextureManager.h"
+#include "../include/rtxts-ttm/streamedTextureManager.h"
 
 #include <vector>
 #include <set>

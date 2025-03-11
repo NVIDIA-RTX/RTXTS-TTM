@@ -9,7 +9,7 @@
 project(rtxts-ttm)
 
 file(GLOB rtxts-ttm_include
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h)
+    ${CMAKE_CURRENT_SOURCE_DIR}/include/rtxts-ttm/*.h)
 file(GLOB rtxts-ttm_src
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
 	${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
