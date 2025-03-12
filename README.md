@@ -13,7 +13,7 @@ The Tiled Texture Manager (TTM) library is designed to manage and orchestrate ti
 
 ## Sample and Documentation
 
- Please refer to the RTXTS SDK repo at https://github.com/NVIDIA-RTX/RTXTS to access the sample and relevant documentation.
+Please refer to the RTXTS SDK repo at https://github.com/NVIDIA-RTX/RTXTS to access the sample and relevant documentation.
 
 ## License
 
