@@ -114,7 +114,7 @@ namespace rtxts
 
         // Computes the internal state of tile streaming requests using provided sampler feedback data
         // After this, call GetTilesToMap()
-        virtual void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timeStamp, uint32_t timeout) = 0;
+        virtual void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout) = 0;
 
         // Get a list of tiles that need to be mapped and updated.
         // Once tiles are mapped by the application, UpdateTilesMapping() should be called to update internal state

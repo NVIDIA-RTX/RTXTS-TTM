@@ -53,7 +53,7 @@ namespace rtxts
 #if ENABLE_STATISTICS
         TileType requestedTilesNum = 0; // statistics
 #endif // ENABLE_STATISTICS
-        std::vector<uint32_t> lastRequestedTime;
+        std::vector<float> lastRequestedTime;
 
         std::vector<TileAllocation> tileAllocations;
         std::vector<TileType> tilesToMap;
@@ -145,7 +145,7 @@ namespace rtxts
         void AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) override;
         void RemoveTiledTexture(uint32_t textureId) override;
 
-        void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout) override;
+        void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout) override;
 
         void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
         void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) override;
@@ -166,7 +166,7 @@ namespace rtxts
 
     private:
         void InitTiledTexture(TextureReference& texture, const TiledTextureDesc& tiledTextureDesc);
-        void UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timeStamp, uint32_t timeout);
+        void UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout);
 
         uint32_t GetTileIndex(const TiledTextureInternalDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 

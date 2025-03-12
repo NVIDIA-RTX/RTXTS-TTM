@@ -56,7 +56,7 @@ namespace rtxts
         m_tiledTextures.Release(texture);
     }
 
-    void TiledTextureManagerImpl::UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout)
+    void TiledTextureManagerImpl::UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout)
     {
         TextureReference texture({ textureId });
         UpdateTiledTexture(texture, samplerFeedbackDesc, timestamp, timeout);
@@ -324,7 +324,7 @@ namespace rtxts
         m_tiledTextureDescs.push_back(desc);
     }
 
-    void TiledTextureManagerImpl::UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, uint32_t timestamp, uint32_t timeout)
+    void TiledTextureManagerImpl::UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout)
     {
         TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
         const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
@@ -392,7 +392,7 @@ namespace rtxts
                 else if (tiledTextureState.allocatedBits.GetBit(tileIndex))
                 {
                     // Tile allocated but not actively requested anymore
-                    uint32_t timeDelta = timestamp - tiledTextureState.lastRequestedTime[tileIndex];
+                    float timeDelta = timestamp - tiledTextureState.lastRequestedTime[tileIndex];
                     if (timeDelta >= timeout)
                     {
                         if (tiledTextureState.mappedBits.GetBit(tileIndex))
