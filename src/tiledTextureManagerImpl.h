@@ -45,6 +45,13 @@ namespace rtxts
         std::vector<TileType> tileIndexToLowerMipTileIndex;
     };
 
+    enum TileState
+    {
+        TileState_Free,
+        TileState_Allocated,
+        TileState_Mapped,
+    };
+
     struct TiledTextureState
     {
         uint32_t allocatedUnpackedTilesNum = 0;
@@ -170,8 +177,7 @@ namespace rtxts
 
         uint32_t GetTileIndex(const TiledTextureInternalDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 
-        void AllocateTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex);
-        void FreeTile(TiledTextureState& tiledTextureState, TileType tileIndex);
+        void TransitionTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex, TileState newState);
 
         std::shared_ptr<TileAllocator> m_tileAllocator;
         const TiledTextureManagerDesc m_tiledTextureManagerDesc;

@@ -10,6 +10,10 @@
 
 #include "tiledTextureManagerImpl.h"
 
+#if _DEBUG
+#include <assert.h>
+#endif
+
 namespace rtxts
 {
     TiledTextureManagerImpl::TiledTextureManagerImpl(const TiledTextureManagerDesc& tiledTextureManagerDesc)
@@ -76,8 +80,9 @@ namespace rtxts
         TextureReference texture({ textureId });
         TiledTextureState& tiledTextureState = m_tiledTextures.GetData(texture);
 
+
         for (auto& tileIndex : tileIndices)
-            tiledTextureState.mappedBits.SetBit(tileIndex);
+            TransitionTile(tiledTextureState, texture.Id(), tileIndex, TileState_Mapped);
     }
 
     void TiledTextureManagerImpl::GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices)
@@ -263,10 +268,6 @@ namespace rtxts
         tiledTextureState.allocatedBits.Init(tilesNum);
         tiledTextureState.mappedBits.Init(tilesNum);
 
-        if (m_tiledTextureManagerDesc.alwaysMapPackedTiles)
-            for (uint32_t i = 0; i < tiledTextureDesc.packedTilesNum; ++i)
-                AllocateTile(tiledTextureState, texture.Id(), desc.regularTilesNum + i);
-
         uint32_t descsNum = (uint32_t)m_tiledTextureDescs.size();
         for (uint32_t i = 0; i < descsNum; ++i)
         {
@@ -322,6 +323,10 @@ namespace rtxts
 
         tiledTextureState.descriptorIndex = descsNum;
         m_tiledTextureDescs.push_back(desc);
+
+        if (m_tiledTextureManagerDesc.alwaysMapPackedTiles)
+            for (uint32_t i = 0; i < tiledTextureDesc.packedTilesNum; ++i)
+                TransitionTile(tiledTextureState, texture.Id(), desc.regularTilesNum + i, TileState_Allocated);
     }
 
     void TiledTextureManagerImpl::UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout)
@@ -397,10 +402,7 @@ namespace rtxts
                     {
                         if (tiledTextureState.mappedBits.GetBit(tileIndex))
                         {
-                            FreeTile(tiledTextureState, tileIndex);
-                            tiledTextureState.tilesToUnmap.push_back(tileIndex);
-
-                            tiledTextureState.allocatedUnpackedTilesNum--;
+                            TransitionTile(tiledTextureState, texture.Id(), tileIndex, TileState_Free);
                         }
                     }
                 }
@@ -416,10 +418,7 @@ namespace rtxts
             BitArray newTilesBits = (requestedBits ^ tiledTextureState.allocatedBits) & requestedBits;
             for (uint32_t tileIndex : newTilesBits)
             {
-                AllocateTile(tiledTextureState, texture.Id(), tileIndex);
-
-                if (tileIndex < desc.regularTilesNum)
-                    tiledTextureState.allocatedUnpackedTilesNum++;
+                TransitionTile(tiledTextureState, texture.Id(), tileIndex, TileState_Allocated);
             }
         }
     }
@@ -435,20 +434,44 @@ namespace rtxts
         return start + offset;
     }
 
-    void TiledTextureManagerImpl::AllocateTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex)
+    void TiledTextureManagerImpl::TransitionTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex, TileState newState)
     {
-        tiledTextureState.tileAllocations[tileIndex] = m_tileAllocator->AllocateTile(textureId, tileIndex);
-        tiledTextureState.allocatedBits.SetBit(tileIndex);
-        tiledTextureState.tilesToMap.push_back(tileIndex);
-    }
+        const TiledTextureInternalDesc& desc = m_tiledTextureDescs[tiledTextureState.descriptorIndex];
 
-    void TiledTextureManagerImpl::FreeTile(TiledTextureState& tiledTextureState, TileType tileIndex)
-    {
-        m_tileAllocator->FreeTile(tiledTextureState.tileAllocations[tileIndex]);
-        tiledTextureState.tileAllocations[tileIndex] = {};
-
-        tiledTextureState.allocatedBits.ClearBit(tileIndex);
-        tiledTextureState.mappedBits.ClearBit(tileIndex);
+        switch(newState)
+        {
+            case TileState_Free:
+#if _DEBUG
+                assert(tiledTextureState.allocatedBits.GetBit(tileIndex) == true);
+                assert(tiledTextureState.mappedBits.GetBit(tileIndex) == true);
+#endif
+                m_tileAllocator->FreeTile(tiledTextureState.tileAllocations[tileIndex]);
+                tiledTextureState.tileAllocations[tileIndex] = {};
+                tiledTextureState.allocatedBits.ClearBit(tileIndex);
+                tiledTextureState.mappedBits.ClearBit(tileIndex);
+                tiledTextureState.tilesToUnmap.push_back(tileIndex);
+                if (tileIndex < desc.regularTilesNum)
+                    tiledTextureState.allocatedUnpackedTilesNum--;
+                break;
+            case TileState_Allocated:
+#if _DEBUG
+                assert(tiledTextureState.allocatedBits.GetBit(tileIndex) == false);
+                assert(tiledTextureState.mappedBits.GetBit(tileIndex) == false);
+#endif
+                tiledTextureState.tileAllocations[tileIndex] = m_tileAllocator->AllocateTile(textureId, tileIndex);
+                tiledTextureState.allocatedBits.SetBit(tileIndex);
+                tiledTextureState.tilesToMap.push_back(tileIndex);
+                if (tileIndex < desc.regularTilesNum)
+                    tiledTextureState.allocatedUnpackedTilesNum++;
+                break;
+            case TileState_Mapped:
+#if _DEBUG
+                assert(tiledTextureState.allocatedBits.GetBit(tileIndex) == true);
+                assert(tiledTextureState.mappedBits.GetBit(tileIndex) == false);
+#endif
+                tiledTextureState.mappedBits.SetBit(tileIndex);
+                break;
+        }
     }
 
     TiledTextureManager* CreateTiledTextureManager(const TiledTextureManagerDesc& desc)
