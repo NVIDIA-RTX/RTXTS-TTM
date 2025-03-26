@@ -104,6 +104,7 @@ namespace rtxts
     {
         uint32_t totalTilesNum;      // Total number of tiles
         uint32_t allocatedTilesNum;  // Number of allocated tiles
+        uint32_t standbyTilesNum;    // Number of tiles in the standby queue
     };
 
     class TiledTextureManager

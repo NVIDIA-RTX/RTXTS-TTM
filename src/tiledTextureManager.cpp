@@ -223,6 +223,7 @@ namespace rtxts
         {
             statistics.totalTilesNum = m_totalTilesNum;
             statistics.allocatedTilesNum = m_tileAllocator->GetAllocatedTilesNum();
+            statistics.standbyTilesNum = (uint32_t)m_standbyQueue.size();
         }
 
         return statistics;
