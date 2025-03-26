@@ -173,6 +173,14 @@ namespace rtxts
             return bitCount;
         }
 
+        bool IsEmpty() const
+        {
+            for (uint32_t i = 0; i < m_wordsNum; i++)
+                if (m_words[i] != 0)
+                    return false;
+            return true;
+        }
+
         SetBitIterator begin()
         {
             return SetBitIterator(this, 0);

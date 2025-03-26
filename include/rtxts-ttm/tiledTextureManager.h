@@ -67,6 +67,11 @@ namespace rtxts
         uint32_t heapTilesCapacity = 256; // number of 64KB tiles per heap, controls allocation granularity
     };
 
+    struct TiledTextureManagerConfig
+    {
+        uint32_t maxStandbyTiles = 1000; // maximum number of tiles in the standby queue
+    };
+
     enum TextureTypes
     {
         eFeedbackTexture,
@@ -106,6 +111,9 @@ namespace rtxts
     public:
         virtual ~TiledTextureManager() {};
 
+        // Update configuration settings which can be changed at runtime
+        virtual void SetConfig(const TiledTextureManagerConfig& config) = 0;
+
         // Add a new texture to the manager
         virtual void AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) = 0;
 
@@ -115,6 +123,10 @@ namespace rtxts
         // Computes the internal state of tile streaming requests using provided sampler feedback data
         // After this, call GetTilesToMap()
         virtual void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout) = 0;
+
+        // After all tiles have been updated with sampler feedback, process the standby queue and free the oldest tiles
+        // Note: This currently needs to be called after UpdateWithSamplerFeedback() even if the max number of standby tiles is 0
+        virtual void UpdateStandbyQueue() = 0;
 
         // Get a list of tiles that need to be mapped and updated.
         // Once tiles are mapped by the application, UpdateTilesMapping() should be called to update internal state

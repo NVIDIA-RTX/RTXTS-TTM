@@ -12,6 +12,7 @@
 
 #define ENABLE_STATISTICS 1
 
+#include <deque>
 #include "../include/rtxts-ttm/tiledTextureManager.h"
 #include "tiledTextureManagerHelper.h"
 #include "tiledTextureAllocator.h"
@@ -22,7 +23,7 @@ namespace rtxts
 {
     struct MipLevelTilingDesc
     {
-        TileType firtsTileIndex = 0;
+        TileType firstTileIndex = 0;
         TileType tilesX = 0;
         TileType tilesY = 0;
     };
@@ -50,6 +51,7 @@ namespace rtxts
         TileState_Free,
         TileState_Allocated,
         TileState_Mapped,
+        TileState_Standby,
     };
 
     struct TiledTextureState
@@ -68,6 +70,7 @@ namespace rtxts
 
         BitArray allocatedBits; // bit set for tiles which are allocated
         BitArray mappedBits; // bit set for tiles which are mapped
+        BitArray standbyBits; // bit set for tiles which are in standby
     };
 
     class TiledTextureManagerImpl : public TiledTextureManager
@@ -77,10 +80,14 @@ namespace rtxts
 
         TiledTextureManagerImpl(const TiledTextureManagerDesc& desc);
 
+        void SetConfig(const TiledTextureManagerConfig& config) override;
+
         void AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) override;
         void RemoveTiledTexture(uint32_t textureId) override;
 
         void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout) override;
+
+        void UpdateStandbyQueue() override;
 
         void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
         void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) override;
@@ -108,10 +115,13 @@ namespace rtxts
 
         std::shared_ptr<TileAllocator> m_tileAllocator;
         const TiledTextureManagerDesc m_tiledTextureManagerDesc;
+        TiledTextureManagerConfig m_config;
 
         std::vector<TiledTextureState> m_tiledTextures;
         std::vector<TiledTextureSharedDesc> m_tiledTextureSharedDescs;
         std::vector<uint32_t> m_tiledTextureFreelist;
+
+        std::deque<std::pair<uint32_t, TileType>> m_standbyQueue;
 
         uint32_t m_totalTilesNum;
     };
