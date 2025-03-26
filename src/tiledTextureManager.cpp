@@ -60,6 +60,9 @@ namespace rtxts
         for (auto& tileAllocation : tiledTextureState.tileAllocations)
             m_tileAllocator->FreeTile(tileAllocation);
 
+        for (uint32_t tileIndex : tiledTextureState.standbyBits)
+            RemoveTileFromStandby(textureId, tileIndex);
+
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
         m_totalTilesNum -= desc.packedTilesNum + desc.regularTilesNum;
 
@@ -485,12 +488,7 @@ namespace rtxts
                 if (tiledTextureState.standbyBits.GetBit(tileIndex))
                 {
                     // Tile is in standby queue, remove from standby queue
-                    auto it = std::find(m_standbyQueue.begin(), m_standbyQueue.end(), std::make_pair(textureId, tileIndex));
-#if _DEBUG
-                    assert(it != m_standbyQueue.end());
-#endif
-                    m_standbyQueue.erase(it);
-                    tiledTextureState.standbyBits.ClearBit(tileIndex);
+                    RemoveTileFromStandby(textureId, tileIndex);
                 }
                 break;
             case TileState_Allocated:
@@ -513,12 +511,7 @@ namespace rtxts
                 if (tiledTextureState.standbyBits.GetBit(tileIndex))
                 {
                     // Tile is in standby queue, remove from standby queue
-                    auto it = std::find(m_standbyQueue.begin(), m_standbyQueue.end(), std::make_pair(textureId, tileIndex));
-#if _DEBUG
-                    assert(it != m_standbyQueue.end());
-#endif
-                    m_standbyQueue.erase(it);
-                    tiledTextureState.standbyBits.ClearBit(tileIndex);
+                    RemoveTileFromStandby(textureId, tileIndex);
                 }
                 break;
             case TileState_Standby:
@@ -531,6 +524,23 @@ namespace rtxts
                 tiledTextureState.standbyBits.SetBit(tileIndex);
                 m_standbyQueue.push_back(std::make_pair(textureId, tileIndex));
                 break;
+        }
+    }
+
+    void TiledTextureManagerImpl::RemoveTileFromStandby(uint32_t textureId, TileType tileIndex)
+    {
+        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        if (tiledTextureState.standbyBits.GetBit(tileIndex))
+        {
+            // Tile is in standby queue, remove from standby queue
+            // NOTE: This linear search and erase() below can be efficient as long as the queue is not too large. For 10000 items
+            // or more, using something like std::list<T> with std::map<T, typename std::list<T>::iterator> would be faster.
+            auto it = std::find(m_standbyQueue.begin(), m_standbyQueue.end(), std::make_pair(textureId, tileIndex));
+#if _DEBUG
+            assert(it != m_standbyQueue.end());
+#endif
+            m_standbyQueue.erase(it);
+            tiledTextureState.standbyBits.ClearBit(tileIndex);
         }
     }
 

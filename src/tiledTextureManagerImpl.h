@@ -112,6 +112,7 @@ namespace rtxts
         uint32_t GetTileIndex(const TiledTextureSharedDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 
         void TransitionTile(uint32_t textureId, TileType tileIndex, TileState newState);
+        void RemoveTileFromStandby(uint32_t textureId, TileType tileIndex);
 
         std::shared_ptr<TileAllocator> m_tileAllocator;
         const TiledTextureManagerDesc m_tiledTextureManagerDesc;
