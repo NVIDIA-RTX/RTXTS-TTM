@@ -18,6 +18,8 @@ namespace rtxts
     typedef uint32_t TileType;
     typedef uint8_t MipLevelType;
 
+    static_assert(sizeof(size_t) == 8, "The hash function in TextureAndTileHash assumes 64-bit size_t");
+
     struct TileCoord
     {
         TileType x = 0;
@@ -60,6 +62,7 @@ namespace rtxts
         virtual void ReleaseHeap(uint32_t heapId) = 0;
     };
 
+    // TiledTextureManager settings which are fixed after initialization
     struct TiledTextureManagerDesc
     {
         bool alwaysMapPackedTiles = true;
@@ -67,6 +70,7 @@ namespace rtxts
         uint32_t heapTilesCapacity = 256; // number of 64KB tiles per heap, controls allocation granularity
     };
 
+    // TiledTextureManager settings which can be changed at runtime
     struct TiledTextureManagerConfig
     {
         uint32_t maxStandbyTiles = 1000; // maximum number of tiles in the standby queue
@@ -85,11 +89,31 @@ namespace rtxts
         uint32_t mipLevelsNum;
     };
 
-    // Heap internal structure which points back to the texture
-    struct TileAllocationInHeap
+    struct TextureAndTile
     {
         uint32_t textureId;
-        uint32_t textureTileIndex;
+        TileType tileIndex;
+
+        bool operator==(const TextureAndTile& other) const
+        {
+            return textureId == other.textureId && tileIndex == other.tileIndex;
+        }
+
+        bool operator<(const TextureAndTile& other) const
+        {
+            if (textureId != other.textureId)
+                return textureId < other.textureId;
+            return tileIndex < other.tileIndex;
+        }
+    };
+
+    struct TextureAndTileHash
+    {
+        size_t operator()(const TextureAndTile& key) const
+        {
+            // Simple hash-like operation by combining both integers
+            return (static_cast<size_t>(key.textureId) << 32) | key.tileIndex;
+        }
     };
 
     // Tile allocation of a slot in a heap
@@ -143,7 +167,7 @@ namespace rtxts
         virtual void WriteMinMipData(uint32_t textureId, uint8_t* data) = 0;
 
         // Finds a condidate tile to be defragmented (moved into a heap with free space)
-        virtual TileAllocationInHeap GetFragmentedTextureTile(TileAllocation& prevTileAllocation) = 0;
+        virtual TextureAndTile GetFragmentedTextureTile(TileAllocation& prevTileAllocation) = 0;
 
         // Get the description of a texture
         virtual TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const = 0;

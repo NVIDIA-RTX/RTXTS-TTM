@@ -12,7 +12,6 @@
 
 #define ENABLE_STATISTICS 1
 
-#include <deque>
 #include "../include/rtxts-ttm/tiledTextureManager.h"
 #include "tiledTextureManagerHelper.h"
 #include "tiledTextureAllocator.h"
@@ -95,7 +94,7 @@ namespace rtxts
 
         void WriteMinMipData(uint32_t textureId, uint8_t* data) override;
 
-        TileAllocationInHeap GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
+        TextureAndTile GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
 
         TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const override;
         bool IsMovableTile(uint32_t textureId, TileType tileIndex) const override;
@@ -122,7 +121,7 @@ namespace rtxts
         std::vector<TiledTextureSharedDesc> m_tiledTextureSharedDescs;
         std::vector<uint32_t> m_tiledTextureFreelist;
 
-        std::deque<std::pair<uint32_t, TileType>> m_standbyQueue;
+        LRUQueue<TextureAndTile, TextureAndTileHash> m_standbyQueue;
 
         uint32_t m_totalTilesNum;
     };

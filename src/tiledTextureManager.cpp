@@ -81,9 +81,9 @@ namespace rtxts
         // After all tiles have been updated with sampler feedback, process the standby queue and free the oldest tiles
         while (m_standbyQueue.size() > m_config.maxStandbyTiles)
         {
-            auto [standbyTextureId, standbyTileIndex] = m_standbyQueue.front();
+            TextureAndTile textureAndTile = m_standbyQueue.front();
             // TransitionTile removes the tile from the standby queue
-            TransitionTile(standbyTextureId, standbyTileIndex, TileState_Free);
+            TransitionTile(textureAndTile.textureId, textureAndTile.tileIndex, TileState_Free);
         }
     }
 
@@ -152,20 +152,20 @@ namespace rtxts
         }
     }
 
-    TileAllocationInHeap TiledTextureManagerImpl::GetFragmentedTextureTile(TileAllocation& prevTileAllocation)
+    TextureAndTile TiledTextureManagerImpl::GetFragmentedTextureTile(TileAllocation& prevTileAllocation)
     {
-        TileAllocationInHeap tileAllocation = m_tileAllocator->GetFragmentedTextureTile((TiledTextureManager*)this);
+        TextureAndTile tileAllocation = m_tileAllocator->GetFragmentedTextureTile((TiledTextureManager*)this);
         if (tileAllocation.textureId)
         {
             TiledTextureState& tiledTextureState = m_tiledTextures[tileAllocation.textureId];
 
             // Free tile from its current allocation
-            TileAllocation oldAllocation = tiledTextureState.tileAllocations[tileAllocation.textureTileIndex];
+            TileAllocation oldAllocation = tiledTextureState.tileAllocations[tileAllocation.tileIndex];
             m_tileAllocator->FreeTile(oldAllocation);
 
             // Allocate tile again
-            tiledTextureState.tileAllocations[tileAllocation.textureTileIndex] = m_tileAllocator->AllocateTile(tileAllocation.textureId, tileAllocation.textureTileIndex);
-            tiledTextureState.mappedBits.ClearBit(tileAllocation.textureTileIndex);
+            tiledTextureState.tileAllocations[tileAllocation.tileIndex] = m_tileAllocator->AllocateTile(tileAllocation.textureId, tileAllocation.tileIndex);
+            tiledTextureState.mappedBits.ClearBit(tileAllocation.tileIndex);
 
             prevTileAllocation = oldAllocation;
         }
@@ -519,10 +519,9 @@ namespace rtxts
                 assert(tiledTextureState.allocatedBits.GetBit(tileIndex) == true);
                 assert(tiledTextureState.mappedBits.GetBit(tileIndex) == true);
                 assert(tiledTextureState.standbyBits.GetBit(tileIndex) == false);
-                assert(std::find(m_standbyQueue.begin(), m_standbyQueue.end(), std::make_pair(textureId, tileIndex)) == m_standbyQueue.end());
 #endif
                 tiledTextureState.standbyBits.SetBit(tileIndex);
-                m_standbyQueue.push_back(std::make_pair(textureId, tileIndex));
+                m_standbyQueue.push_back(TextureAndTile{textureId, tileIndex});
                 break;
         }
     }
@@ -532,14 +531,7 @@ namespace rtxts
         TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
         if (tiledTextureState.standbyBits.GetBit(tileIndex))
         {
-            // Tile is in standby queue, remove from standby queue
-            // NOTE: This linear search and erase() below can be efficient as long as the queue is not too large. For 10000 items
-            // or more, using something like std::list<T> with std::map<T, typename std::list<T>::iterator> would be faster.
-            auto it = std::find(m_standbyQueue.begin(), m_standbyQueue.end(), std::make_pair(textureId, tileIndex));
-#if _DEBUG
-            assert(it != m_standbyQueue.end());
-#endif
-            m_standbyQueue.erase(it);
+            m_standbyQueue.erase(TextureAndTile{textureId, tileIndex});
             tiledTextureState.standbyBits.ClearBit(tileIndex);
         }
     }
