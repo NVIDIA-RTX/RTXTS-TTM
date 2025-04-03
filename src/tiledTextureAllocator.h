@@ -23,7 +23,7 @@ namespace rtxts
     public:
         TiledHeap(uint32_t tilesNum, uint32_t heapId);
 
-        TileAllocation AllocateTile(uint32_t textureId, uint32_t textureTileIndex);
+        TileAllocation AllocateTile(uint32_t textureId, uint32_t tileIndex);
         void FreeTile(uint32_t heapTileIndex);
 
         uint32_t AllocatedTilesNum() const
@@ -51,7 +51,7 @@ namespace rtxts
             return m_usedList;
         }
 
-        const std::vector<TileAllocationInHeap>& GetAllocations() const
+        const std::vector<TextureAndTile>& GetAllocations() const
         {
             return m_allocations;
         }
@@ -61,7 +61,7 @@ namespace rtxts
     private:
         std::vector<uint32_t> m_freeTileIndices;
         std::set<uint32_t> m_usedList;
-        std::vector<TileAllocationInHeap> m_allocations;
+        std::vector<TextureAndTile> m_allocations;
 
         const uint32_t m_tilesNum;
         const uint32_t m_heapId;
@@ -87,7 +87,7 @@ namespace rtxts
             return m_allocatedTilesNum;
         }
 
-        TileAllocationInHeap GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const;
+        TextureAndTile GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const;
 
     private:
         std::vector<std::shared_ptr<TiledHeap>> m_heaps;

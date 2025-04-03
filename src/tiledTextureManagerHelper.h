@@ -12,6 +12,8 @@
 
 #include <vector>
 #include <iterator>
+#include <list>
+#include <unordered_map>
 
 namespace rtxts
 {
@@ -173,6 +175,14 @@ namespace rtxts
             return bitCount;
         }
 
+        bool IsEmpty() const
+        {
+            for (uint32_t i = 0; i < m_wordsNum; i++)
+                if (m_words[i] != 0)
+                    return false;
+            return true;
+        }
+
         SetBitIterator begin()
         {
             return SetBitIterator(this, 0);
@@ -197,6 +207,50 @@ namespace rtxts
         uint32_t m_bitsNum;
         uint32_t m_wordsNum;
         std::vector<uint64_t> m_words;
+    };
+
+    // Least-Recently-Used container for caching tiles
+    template <typename T, typename Hash>
+    class LRUQueue {
+    private:
+        std::list<T> list;
+        std::unordered_map<T, typename std::list<T>::iterator, Hash> map;
+
+    public:
+        void push_back(const T& val)
+        {  
+            list.push_back(val);
+            map[val] = --list.end();
+        }
+
+        void pop_front()
+        {
+            if (!list.empty())
+            {
+                map.erase(list.front());
+                list.pop_front();
+            }
+        }
+
+        const T& front() const
+        {
+            return list.front();
+        }
+
+        void erase(const T& val)
+        {
+            auto it = map.find(val);
+            if (it != map.end())
+            {
+                list.erase(it->second);
+                map.erase(it);
+            }
+        }
+
+        size_t size() const
+        {
+            return list.size();
+        }
     };
 
     static uint32_t PrevPowerOf2(uint32_t x)

@@ -22,12 +22,12 @@ namespace rtxts
 {
     struct MipLevelTilingDesc
     {
-        TileType firtsTileIndex = 0;
+        TileType firstTileIndex = 0;
         TileType tilesX = 0;
         TileType tilesY = 0;
     };
 
-    struct TiledTextureInternalDesc
+    struct TiledTextureSharedDesc
     {
         TileType regularTilesNum = 0;
         TileType packedTilesNum = 0;
@@ -45,10 +45,18 @@ namespace rtxts
         std::vector<TileType> tileIndexToLowerMipTileIndex;
     };
 
+    enum TileState
+    {
+        TileState_Free,
+        TileState_Allocated,
+        TileState_Mapped,
+        TileState_Standby,
+    };
+
     struct TiledTextureState
     {
         uint32_t allocatedUnpackedTilesNum = 0;
-        uint16_t descriptorIndex = UINT16_MAX;
+        uint32_t descIndex = 0;
 
 #if ENABLE_STATISTICS
         TileType requestedTilesNum = 0; // statistics
@@ -61,78 +69,7 @@ namespace rtxts
 
         BitArray allocatedBits; // bit set for tiles which are allocated
         BitArray mappedBits; // bit set for tiles which are mapped
-    };
-
-    struct ObjectReference
-    {
-        ObjectReference(uint32_t id) { objectId = id; }
-
-        bool IsValid() const { return objectId != 0; }
-        uint32_t Id() const { return objectId; }
-        uint32_t Index() const { return objectId - 1; }
-
-    private:
-        uint32_t objectId;
-    };
-
-    struct TextureReference : ObjectReference
-    {
-        static constexpr uint32_t OBJECT_NUM_MAX = 16384;
-    };
-
-    template<typename ObjectReference, typename ObjectDataType>
-    class ObjectContainer
-    {
-    public:
-        ObjectContainer()
-        {
-            m_freeObjectIds.resize(ObjectReference::OBJECT_NUM_MAX);
-            m_objectData.resize(ObjectReference::OBJECT_NUM_MAX);
-
-            m_freeObjectNum = ObjectReference::OBJECT_NUM_MAX;
-            for (uint32_t i = 0; i < ObjectReference::OBJECT_NUM_MAX; ++i)
-                m_freeObjectIds[i] = ObjectType(i + 1);
-        }
-
-        ObjectReference Create()
-        {
-            if (!m_freeObjectNum)
-            {
-                m_freeObjectNum = 1;
-                m_freeObjectIds.emplace_back((ObjectType)0);
-                m_objectData.emplace_back(ObjectDataType());
-
-                m_freeObjectIds[0] = (ObjectType)m_freeObjectIds.size();
-            }
-
-            ObjectType objectId = m_freeObjectIds[--m_freeObjectNum];
-
-            return ObjectReference{ objectId };
-        }
-
-        void Release(const ObjectReference& objectReference)
-        {
-            if (!objectReference.IsValid())
-                return;
-
-            m_freeObjectIds[m_freeObjectNum++] = objectReference.Id();
-            m_objectData[objectReference.Index()] = {};
-        }
-
-        ObjectDataType& GetData(ObjectReference& objectReference)
-        {
-            return m_objectData[objectReference.Index()];
-        }
-
-        const ObjectDataType& GetData(ObjectReference& objectReference) const
-        {
-            return m_objectData[objectReference.Index()];
-        }
-
-    private:
-        uint32_t m_freeObjectNum;
-        std::vector<ObjectType> m_freeObjectIds;
-        std::vector<ObjectDataType> m_objectData;
+        BitArray standbyBits; // bit set for tiles which are in standby
     };
 
     class TiledTextureManagerImpl : public TiledTextureManager
@@ -142,19 +79,22 @@ namespace rtxts
 
         TiledTextureManagerImpl(const TiledTextureManagerDesc& desc);
 
+        void SetConfig(const TiledTextureManagerConfig& config) override;
+
         void AddTiledTexture(const TiledTextureDesc& tiledTextureDesc, uint32_t& textureId) override;
         void RemoveTiledTexture(uint32_t textureId) override;
 
         void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout) override;
 
+        void UpdateStandbyQueue() override;
+
         void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
         void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) override;
-
         void GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
 
         void WriteMinMipData(uint32_t textureId, uint8_t* data) override;
 
-        TileAllocationInHeap GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
+        TextureAndTile GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
 
         TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const override;
         bool IsMovableTile(uint32_t textureId, TileType tileIndex) const override;
@@ -165,19 +105,23 @@ namespace rtxts
         Statistics GetStatistics() const override;
 
     private:
-        void InitTiledTexture(TextureReference& texture, const TiledTextureDesc& tiledTextureDesc);
-        void UpdateTiledTexture(TextureReference& texture, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout);
+        void InitTiledTexture(uint32_t textureId, const TiledTextureDesc& tiledTextureDesc);
+        void UpdateTiledTexture(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout);
 
-        uint32_t GetTileIndex(const TiledTextureInternalDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
+        uint32_t GetTileIndex(const TiledTextureSharedDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 
-        void AllocateTile(TiledTextureState& tiledTextureState, uint32_t textureId, TileType tileIndex);
-        void FreeTile(TiledTextureState& tiledTextureState, TileType tileIndex);
+        void TransitionTile(uint32_t textureId, TileType tileIndex, TileState newState);
+        void RemoveTileFromStandby(uint32_t textureId, TileType tileIndex);
 
         std::shared_ptr<TileAllocator> m_tileAllocator;
         const TiledTextureManagerDesc m_tiledTextureManagerDesc;
+        TiledTextureManagerConfig m_config;
 
-        ObjectContainer<TextureReference, TiledTextureState> m_tiledTextures;
-        std::vector<TiledTextureInternalDesc> m_tiledTextureDescs;
+        std::vector<TiledTextureState> m_tiledTextures;
+        std::vector<TiledTextureSharedDesc> m_tiledTextureSharedDescs;
+        std::vector<uint32_t> m_tiledTextureFreelist;
+
+        LRUQueue<TextureAndTile, TextureAndTileHash> m_standbyQueue;
 
         uint32_t m_totalTilesNum;
     };

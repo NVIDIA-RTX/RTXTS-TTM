@@ -25,7 +25,7 @@ namespace rtxts
         }
     }
 
-    TileAllocation TiledHeap::AllocateTile(uint32_t textureId, uint32_t textureTileIndex)
+    TileAllocation TiledHeap::AllocateTile(uint32_t textureId, uint32_t tileIndex)
     {
         uint32_t heapTileIndex = m_freeTileIndices.back();
         m_freeTileIndices.pop_back();
@@ -33,7 +33,7 @@ namespace rtxts
 
         auto& textureAllocation = m_allocations[heapTileIndex];
         textureAllocation.textureId = textureId;
-        textureAllocation.textureTileIndex = textureTileIndex;
+        textureAllocation.tileIndex = tileIndex;
 
         TileAllocation heapAllocation;
         heapAllocation.heapId = m_heapId;
@@ -111,9 +111,9 @@ namespace rtxts
         }
     }
 
-    TileAllocationInHeap TileAllocator::GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const
+    TextureAndTile TileAllocator::GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const
     {
-        TileAllocationInHeap tileAllocation = {};
+        TextureAndTile tileAllocation = {};
 
         // We need at least 2 heaps
         if (m_heaps.size() < 2)
@@ -142,7 +142,7 @@ namespace rtxts
                 for (auto& heapAllocationIndex : heap->GetUsedTileSet())
                 {
                     auto tileAllocation = heap->GetAllocations()[heapAllocationIndex];
-                    if (tiledTextureManager->IsMovableTile(tileAllocation.textureId, tileAllocation.textureTileIndex))
+                    if (tiledTextureManager->IsMovableTile(tileAllocation.textureId, tileAllocation.tileIndex))
                     {
                         return tileAllocation;
                     }
