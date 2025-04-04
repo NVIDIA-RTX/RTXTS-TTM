@@ -14,7 +14,7 @@
 
 #define ENABLE_STATISTICS 1
 
-#include "../include/rtxts-ttm/tiledTextureManager.h"
+#include "../include/rtxts-ttm/TiledTextureManager.h"
 #include "tiledTextureManagerHelper.h"
 #include "tiledTextureAllocator.h"
 

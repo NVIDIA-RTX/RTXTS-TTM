@@ -10,7 +10,7 @@
  * its affiliates is strictly prohibited.
  */
 
-#include "tiledTextureManagerImpl.h"
+#include "TiledTextureManagerImpl.h"
 
 #if _DEBUG
 #include <assert.h>

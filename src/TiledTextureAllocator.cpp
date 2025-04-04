@@ -10,7 +10,7 @@
  * its affiliates is strictly prohibited.
  */
 
-#include "tiledTextureAllocator.h"
+#include "TiledTextureAllocator.h"
 
 namespace rtxts
 {

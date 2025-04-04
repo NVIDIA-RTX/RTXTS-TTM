@@ -12,7 +12,7 @@
 
 #pragma once
 
-#include "../include/rtxts-ttm/tiledTextureManager.h"
+#include "../include/rtxts-ttm/TiledTextureManager.h"
 
 #include <vector>
 #include <set>
