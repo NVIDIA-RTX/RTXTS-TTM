@@ -75,7 +75,127 @@ namespace rtxts
 
     void TiledTextureManagerImpl::UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout)
     {
-        UpdateTiledTexture(textureId, samplerFeedbackDesc, timestamp, timeout);
+        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
+
+        tiledTextureState.requestedTilesNum = desc.packedTilesNum;
+        if (desc.regularMipLevelsNum == 0)
+            return;
+
+        tiledTextureState.tilesToMap.clear();
+        tiledTextureState.tilesToUnmap.clear();
+
+        BitArray requestedBits;
+        requestedBits.Init(desc.regularTilesNum + desc.packedTilesNum);
+        // Mark tiles covering packed mip levels
+        for (uint32_t packedTileIndex = 0; packedTileIndex < desc.packedTilesNum; ++packedTileIndex)
+            requestedBits.SetBit(desc.regularTilesNum + packedTileIndex);
+
+        // Decode sampler feedback data in MinMip format
+        uint32_t firstTileIndex = UINT32_MAX;
+        if (samplerFeedbackDesc.pMinMipData)
+        {
+            uint32_t feedbackTilesNum = desc.feedbackTilesX * desc.feedbackTilesY;
+            bool useBatchProcessing = (feedbackTilesNum % 8) == 0;
+            for (uint32_t feedbackTileIndex = 0; feedbackTileIndex < feedbackTilesNum;)
+            {
+                if (useBatchProcessing && ((feedbackTileIndex % 8) == 0))
+                {
+                    const uint64_t& mipLevelData = (uint64_t&)samplerFeedbackDesc.pMinMipData[feedbackTileIndex];
+                    if (mipLevelData == 0xFFFFFFFFFFFFFFFFLL)
+                    {
+                        feedbackTileIndex += 8;
+                        continue;
+                    }
+                }
+
+                const uint8_t& mipLevel = samplerFeedbackDesc.pMinMipData[feedbackTileIndex];
+                if (mipLevel != 0xFF)
+                {
+                    TileCoord tileCoord;
+                    tileCoord.mipLevel = (uint32_t)std::max(mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
+
+                    tileCoord.x = ((feedbackTileIndex % desc.feedbackTilesX) / desc.feedbackGranularityX) >> tileCoord.mipLevel;
+                    tileCoord.y = ((feedbackTileIndex / desc.feedbackTilesX) / desc.feedbackGranularityY) >> tileCoord.mipLevel;
+
+                        uint32_t tileIndex = GetTileIndex(desc, tileCoord);
+                        firstTileIndex = std::min(firstTileIndex, tileIndex);
+                        requestedBits.SetBit(tileIndex);
+                    }
+
+                feedbackTileIndex++;
+            }
+
+            // Propagate requested tiles to lower regular mip levels
+            uint32_t lastTileIndex = desc.regularMipLevelsNum > 1 ? desc.mipLevelTilingDescs[desc.regularMipLevelsNum - 1].firstTileIndex : 0;
+            for (uint32_t tileIndex = firstTileIndex; tileIndex < lastTileIndex; ++tileIndex)
+                if (requestedBits.GetBit(tileIndex))
+                    requestedBits.SetBit(desc.tileIndexToLowerMipTileIndex[tileIndex]);
+        }
+
+        UpdateTiledTexture(textureId, requestedBits, firstTileIndex, timestamp, timeout);
+    }
+
+    void TiledTextureManagerImpl::MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout)
+    {
+        TiledTextureState& primaryTextureState = m_tiledTextures[primaryTextureId];
+        TiledTextureState& followerTextureState = m_tiledTextures[followerTextureId];
+        const TiledTextureSharedDesc& primaryDesc = m_tiledTextureSharedDescs[primaryTextureState.descIndex];
+        const TiledTextureSharedDesc& followerDesc = m_tiledTextureSharedDescs[followerTextureState.descIndex];
+
+        BitArray requestedBits;
+        requestedBits.Init(followerDesc.regularTilesNum + followerDesc.packedTilesNum);
+
+        // Mark tiles covering packed mip levels
+        for (uint32_t packedTileIndex = 0; packedTileIndex < followerDesc.packedTilesNum; ++packedTileIndex)
+            requestedBits.SetBit(followerDesc.regularTilesNum + packedTileIndex);
+
+        uint32_t firstTileIndex = UINT32_MAX;
+
+        // Loop over all allocated tiles in the primary texture
+        for (uint32_t primaryTileIndex : primaryTextureState.allocatedBits)
+        {
+            // Get the tile coordinates for the primary texture
+            TileCoord primaryTileCoord = primaryDesc.tileIndexToTileCoord[primaryTileIndex];
+            uint32_t primaryMipLevel = primaryTileCoord.mipLevel;
+
+            // Compute the texel region covered by this primary tile in texels
+            uint32_t primaryLeft = primaryTileCoord.x * primaryDesc.tileWidth;
+            uint32_t primaryTop = primaryTileCoord.y * primaryDesc.tileHeight;
+            uint32_t primaryRight = primaryLeft + primaryDesc.tileWidth;
+            uint32_t primaryBottom = primaryTop + primaryDesc.tileHeight;
+
+            // Check if follower texture has the same mip level
+            if (primaryMipLevel < followerDesc.regularMipLevelsNum)
+            {
+                // Get the tiling description for this mip level in the follower texture
+                const MipLevelTilingDesc& followerMipTilingDesc = followerDesc.mipLevelTilingDescs[primaryMipLevel];
+
+                // Loop over all tiles in this mip level of the follower texture
+                uint32_t tileStart = followerMipTilingDesc.firstTileIndex;
+                uint32_t tileEnd = tileStart + (followerMipTilingDesc.tilesX * followerMipTilingDesc.tilesY);
+                for (uint32_t followerTileIndex = tileStart; followerTileIndex < tileEnd; ++followerTileIndex)
+                {
+                    TileCoord followerTileCoord = followerDesc.tileIndexToTileCoord[followerTileIndex];
+
+                    // Compute the texel region covered by this follower tile in texels
+                    uint32_t followerLeft = followerTileCoord.x * followerDesc.tileWidth;
+                    uint32_t followerTop = followerTileCoord.y * followerDesc.tileHeight;
+                    uint32_t followerRight = followerLeft + followerDesc.tileWidth;
+                    uint32_t followerBottom = followerTop + followerDesc.tileHeight;
+
+                    // Check if the follower tile intersects the primary tile
+                    if (followerLeft < primaryRight && followerRight > primaryLeft &&
+                        followerTop < primaryBottom && followerBottom > primaryTop)
+                    {
+                        requestedBits.SetBit(followerTileIndex);
+                        firstTileIndex = std::min(firstTileIndex, followerTileIndex);
+                    }
+                }
+            }
+        }
+
+        UpdateTiledTexture(followerTextureId, requestedBits, firstTileIndex, timeStamp, timeout);
     }
 
     void TiledTextureManagerImpl::UpdateStandbyQueue()
@@ -353,7 +473,7 @@ namespace rtxts
                 TransitionTile(textureId, desc.regularTilesNum + i, TileState_Allocated);
     }
 
-    void TiledTextureManagerImpl::UpdateTiledTexture(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout)
+    void TiledTextureManagerImpl::UpdateTiledTexture(uint32_t textureId, BitArray requestedBits, uint32_t firstTileIndex, float timestamp, float timeout)
     {
         TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
@@ -361,57 +481,6 @@ namespace rtxts
         tiledTextureState.requestedTilesNum = desc.packedTilesNum;
         if (desc.regularMipLevelsNum == 0)
             return;
-
-        tiledTextureState.tilesToMap.clear();
-        tiledTextureState.tilesToUnmap.clear();
-
-        BitArray requestedBits;
-        requestedBits.Init(desc.regularTilesNum + desc.packedTilesNum);
-        // Mark tiles covering packed mip levels
-        for (uint32_t packedTileIndex = 0; packedTileIndex < desc.packedTilesNum; ++packedTileIndex)
-            requestedBits.SetBit(desc.regularTilesNum + packedTileIndex);
-
-        // Decode sampler feedback data in MinMip format
-        uint32_t firstTileIndex = UINT32_MAX;
-        if (samplerFeedbackDesc.pMinMipData)
-        {
-            uint32_t feedbackTilesNum = desc.feedbackTilesX * desc.feedbackTilesY;
-            bool useBatchProcessing = (feedbackTilesNum % 8) == 0;
-            for (uint32_t feedbackTileIndex = 0; feedbackTileIndex < feedbackTilesNum;)
-            {
-                if (useBatchProcessing && ((feedbackTileIndex % 8) == 0))
-                {
-                    const uint64_t& mipLevelData = (uint64_t&)samplerFeedbackDesc.pMinMipData[feedbackTileIndex];
-                    if (mipLevelData == 0xFFFFFFFFFFFFFFFFLL)
-                    {
-                        feedbackTileIndex += 8;
-                        continue;
-                    }
-                }
-
-                const uint8_t& mipLevel = samplerFeedbackDesc.pMinMipData[feedbackTileIndex];
-                if (mipLevel != 0xFF)
-                {
-                    TileCoord tileCoord;
-                    tileCoord.mipLevel = (uint32_t)std::max(mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
-
-                    tileCoord.x = ((feedbackTileIndex % desc.feedbackTilesX) / desc.feedbackGranularityX) >> tileCoord.mipLevel;
-                    tileCoord.y = ((feedbackTileIndex / desc.feedbackTilesX) / desc.feedbackGranularityY) >> tileCoord.mipLevel;
-
-                        uint32_t tileIndex = GetTileIndex(desc, tileCoord);
-                        firstTileIndex = std::min(firstTileIndex, tileIndex);
-                        requestedBits.SetBit(tileIndex);
-                    }
-
-                feedbackTileIndex++;
-            }
-
-            // Propagate requested tiles to lower regular mip levels
-            uint32_t lastTileIndex = desc.regularMipLevelsNum > 1 ? desc.mipLevelTilingDescs[desc.regularMipLevelsNum - 1].firstTileIndex : 0;
-            for (uint32_t tileIndex = firstTileIndex; tileIndex < lastTileIndex; ++tileIndex)
-                if (requestedBits.GetBit(tileIndex))
-                    requestedBits.SetBit(desc.tileIndexToLowerMipTileIndex[tileIndex]);
-        }
 
         bool requestedUnpackedTiles = firstTileIndex != UINT32_MAX;
         if (requestedUnpackedTiles || tiledTextureState.allocatedUnpackedTilesNum)

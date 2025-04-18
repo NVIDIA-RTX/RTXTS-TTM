@@ -151,6 +151,11 @@ namespace rtxts
         // After this, call GetTilesToMap()
         virtual void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout) = 0;
 
+        // Make sure the state of requested tiles of a "follower" texture matches that of a "primary" texture
+        // NOTE: If the "follower" texture has higher resolution mips than the "primary" texture these will never be marked
+        // as requested by this function.
+        virtual void MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout) = 0;
+
         // After all tiles have been updated with sampler feedback, process the standby queue and free the oldest tiles
         // Note: This currently needs to be called after UpdateWithSamplerFeedback() even if the max number of standby tiles is 0
         virtual void UpdateStandbyQueue() = 0;

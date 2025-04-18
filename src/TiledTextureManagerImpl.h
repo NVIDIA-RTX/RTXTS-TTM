@@ -88,6 +88,8 @@ namespace rtxts
 
         void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout) override;
 
+        void MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout) override;
+
         void UpdateStandbyQueue() override;
 
         void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
@@ -108,7 +110,7 @@ namespace rtxts
 
     private:
         void InitTiledTexture(uint32_t textureId, const TiledTextureDesc& tiledTextureDesc);
-        void UpdateTiledTexture(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timeStamp, float timeout);
+        void UpdateTiledTexture(uint32_t textureId, BitArray requestedBits, uint32_t firstTileIndex, float timeStamp, float timeout);
 
         uint32_t GetTileIndex(const TiledTextureSharedDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 
