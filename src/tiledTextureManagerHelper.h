@@ -129,6 +129,14 @@ namespace rtxts
                 m_words[i] ^= b.m_words[i];
         }
 
+        bool operator==(const BitArray& b)
+        {
+            for (uint32_t i = 0; i < m_wordsNum; i++)
+                if (m_words[i] != b.m_words[i])
+                    return false;
+            return true;
+        }
+
         BitArray operator&(const BitArray& b)
         {
             BitArray a = *this;
