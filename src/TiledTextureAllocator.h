@@ -89,6 +89,16 @@ namespace rtxts
             return m_allocatedTilesNum;
         }
 
+        uint32_t GetTotalTilesNum()
+        {
+            return GetHeapsNum() * m_heapSizeInTiles;
+        }
+
+        uint32_t GetFreeTilesNum()
+        {
+            return GetTotalTilesNum() - m_allocatedTilesNum;
+        }
+
         TextureAndTile GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const;
 
     private:

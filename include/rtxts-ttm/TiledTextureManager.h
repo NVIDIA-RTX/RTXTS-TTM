@@ -75,7 +75,7 @@ namespace rtxts
     // TiledTextureManager settings which can be changed at runtime
     struct TiledTextureManagerConfig
     {
-        uint32_t maxStandbyTiles = 1000; // maximum number of tiles in the standby queue
+        uint32_t numExtraStandbyTiles = 1000; // Target number of tiles to keep in standby before being evicted
     };
 
     enum TextureTypes
@@ -128,9 +128,10 @@ namespace rtxts
 
     struct Statistics
     {
-        uint32_t totalTilesNum;      // Total number of tiles
+        uint32_t totalTilesNum;      // Total number of tiles tracked
         uint32_t allocatedTilesNum;  // Number of allocated tiles
         uint32_t standbyTilesNum;    // Number of tiles in the standby queue
+        uint32_t heapFreeTilesNum;   // Number of free tiles in allocated heaps
     };
 
     class TiledTextureManager
@@ -155,10 +156,6 @@ namespace rtxts
         // NOTE: If the "follower" texture has higher resolution mips than the "primary" texture these will never be marked
         // as requested by this function.
         virtual void MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout) = 0;
-
-        // After all tiles have been updated with sampler feedback, process the standby queue and free the oldest tiles
-        // Note: This currently needs to be called after UpdateWithSamplerFeedback() even if the max number of standby tiles is 0
-        virtual void UpdateStandbyQueue() = 0;
 
         // Get a list of tiles that need to be mapped and updated.
         // Once tiles are mapped by the application, UpdateTilesMapping() should be called to update internal state

@@ -69,6 +69,7 @@ namespace rtxts
         std::vector<TileType> tilesToMap;
         std::vector<TileType> tilesToUnmap;
 
+        BitArray requestedBits; // bit set for tiles which are actively requested
         BitArray allocatedBits; // bit set for tiles which are allocated
         BitArray mappedBits; // bit set for tiles which are mapped
         BitArray standbyBits; // bit set for tiles which are in standby
@@ -89,8 +90,6 @@ namespace rtxts
         void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout) override;
 
         void MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout) override;
-
-        void UpdateStandbyQueue() override;
 
         void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
         void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) override;

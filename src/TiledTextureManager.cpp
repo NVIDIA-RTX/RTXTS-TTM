@@ -152,8 +152,8 @@ namespace rtxts
 
         uint32_t firstTileIndex = UINT32_MAX;
 
-        // Loop over all allocated tiles in the primary texture
-        for (uint32_t primaryTileIndex : primaryTextureState.allocatedBits)
+        // Loop over all currently being requested tiles in the primary texture
+        for (uint32_t primaryTileIndex : primaryTextureState.requestedBits)
         {
             // Get the tile coordinates for the primary texture
             TileCoord primaryTileCoord = primaryDesc.tileIndexToTileCoord[primaryTileIndex];
@@ -196,17 +196,6 @@ namespace rtxts
         }
 
         UpdateTiledTexture(followerTextureId, requestedBits, firstTileIndex, timeStamp, timeout);
-    }
-
-    void TiledTextureManagerImpl::UpdateStandbyQueue()
-    {
-        // After all tiles have been updated with sampler feedback, process the standby queue and free the oldest tiles
-        while (m_standbyQueue.size() > m_config.maxStandbyTiles)
-        {
-            TextureAndTile textureAndTile = m_standbyQueue.front();
-            // TransitionTile removes the tile from the standby queue
-            TransitionTile(textureAndTile.textureId, textureAndTile.tileIndex, TileState_Free);
-        }
     }
 
     void TiledTextureManagerImpl::GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices)
@@ -348,6 +337,7 @@ namespace rtxts
         {
             statistics.totalTilesNum = m_totalTilesNum;
             statistics.allocatedTilesNum = m_tileAllocator->GetAllocatedTilesNum();
+            statistics.heapFreeTilesNum = m_tileAllocator->GetFreeTilesNum();
             statistics.standbyTilesNum = (uint32_t)m_standbyQueue.size();
         }
 
@@ -478,6 +468,9 @@ namespace rtxts
         TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
+        // Save requested bites for use in follower textures
+        tiledTextureState.requestedBits = requestedBits;
+
         tiledTextureState.requestedTilesNum = desc.packedTilesNum;
         if (desc.regularMipLevelsNum == 0)
             return;
@@ -567,6 +560,13 @@ namespace rtxts
                 assert(tiledTextureState.allocatedBits.GetBit(tileIndex) == false);
                 assert(tiledTextureState.mappedBits.GetBit(tileIndex) == false);
 #endif
+                if (m_tileAllocator->GetFreeTilesNum() == 0 && m_standbyQueue.size() >= m_config.numExtraStandbyTiles)
+                //if (m_standbyQueue.size() > m_config.numExtraStandbyTiles)
+                {
+                    // Remove the oldest tile from the standby queue before allocating more heaps
+                    TextureAndTile textureAndTile = m_standbyQueue.front();
+                    TransitionTile(textureAndTile.textureId, textureAndTile.tileIndex, TileState_Free);
+                }
                 tiledTextureState.tileAllocations[tileIndex] = m_tileAllocator->AllocateTile(textureId, tileIndex);
                 tiledTextureState.allocatedBits.SetBit(tileIndex);
                 tiledTextureState.tilesToMap.push_back(tileIndex);
