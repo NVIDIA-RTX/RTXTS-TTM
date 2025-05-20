@@ -72,9 +72,12 @@ namespace rtxts
     class TileAllocator
     {
     public:
-        TileAllocator(uint32_t heapSizeInTiles, uint32_t tileSizeInBytes, HeapAllocator* heapAllocatior);
+        TileAllocator(uint32_t heapSizeInTiles, uint32_t tileSizeInBytes);
 
-        std::shared_ptr<TiledHeap> FindOrAllocFreeHeap();
+        void AddHeap(uint32_t heapId);
+        void RemoveHeap(uint32_t heapId);
+
+        std::shared_ptr<TiledHeap> FindFreeHeap();
 
         TileAllocation AllocateTile(uint32_t textureId, uint32_t tileIndex);
         void FreeTile(TileAllocation& tileAllocation);
@@ -101,9 +104,10 @@ namespace rtxts
 
         TextureAndTile GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const;
 
+        void GetEmptyHeaps(std::vector<uint32_t>& emptyHeaps) const;
+
     private:
         std::vector<std::shared_ptr<TiledHeap>> m_heaps;
-        HeapAllocator* m_pHeapAllocator = nullptr;
         const uint32_t m_heapSizeInTiles;
         const uint32_t m_tileSizeInBytes;
         uint32_t m_allocatedTilesNum = 0;

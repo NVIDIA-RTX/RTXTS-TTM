@@ -17,22 +17,19 @@
 
 namespace rtxts
 {
-    typedef uint32_t TileType;
-    typedef uint8_t MipLevelType;
-
     static_assert(sizeof(size_t) == 8, "The hash function in TextureAndTileHash assumes 64-bit size_t");
 
     struct TileCoord
     {
-        TileType x = 0;
-        TileType y = 0;
-        MipLevelType mipLevel = 0;
+        uint32_t x = 0;
+        uint32_t y = 0;
+        uint8_t mipLevel = 0;
     };
 
     struct TiledLevelDesc
     {
-        TileType widthInTiles;           // width of the level in tiles
-        TileType heightInTiles;          // height of the level in tiles
+        uint32_t widthInTiles;           // width of the level in tiles
+        uint32_t heightInTiles;          // height of the level in tiles
     };
 
     struct TiledTextureDesc
@@ -54,21 +51,9 @@ namespace rtxts
         int32_t mipLevelBias = 0;
     };
 
-    // Abstract class for allocating and releasing heaps on the application side
-    class HeapAllocator
-    {
-    public:
-        virtual ~HeapAllocator() {};
-
-        virtual void AllocateHeap(uint64_t heapSizeInBytes, uint32_t& heapId) = 0;
-        virtual void ReleaseHeap(uint32_t heapId) = 0;
-    };
-
     // TiledTextureManager settings which are fixed after initialization
     struct TiledTextureManagerDesc
     {
-        bool alwaysMapPackedTiles = true;
-        HeapAllocator* pHeapAllocator = nullptr;
         uint32_t heapTilesCapacity = 256; // number of 64KB tiles per heap, controls allocation granularity
     };
 
@@ -94,7 +79,7 @@ namespace rtxts
     struct TextureAndTile
     {
         uint32_t textureId;
-        TileType tileIndex;
+        uint32_t tileIndex;
 
         bool operator==(const TextureAndTile& other) const
         {
@@ -124,6 +109,11 @@ namespace rtxts
         uint32_t heapId = 0;
         uint32_t heapTileIndex = UINT32_MAX;
         void* pHeap = nullptr;
+
+        bool IsValid() const
+        {
+            return pHeap != nullptr && heapTileIndex != UINT32_MAX;
+        }
     };
 
     struct Statistics
@@ -157,27 +147,45 @@ namespace rtxts
         // as requested by this function.
         virtual void MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout) = 0;
 
+        // After updating all textures, get the number of heaps desired to allocate all requested tiles + the standby count
+        virtual uint32_t GetNumDesiredHeaps() = 0;
+
+        // Add a new heap to the manager
+        virtual void AddHeap(uint32_t heapId) = 0;
+
+        // Remove a heap from the manager
+        virtual void RemoveHeap(uint32_t heapId) = 0;
+
+        // Trim the standby tile allocation to the target
+        virtual void TrimStandbyTiles() = 0;
+
+        // Attempt to allocate all outstanding requested tiles
+        virtual void AllocateRequestedTiles() = 0;
+
         // Get a list of tiles that need to be mapped and updated.
         // Once tiles are mapped by the application, UpdateTilesMapping() should be called to update internal state
-        virtual void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) = 0;
+        virtual void GetTilesToMap(uint32_t textureId, std::vector<uint32_t>& tileIndices) = 0;
 
         // Updates internal state of the texture after tiles are mapped
-        virtual void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) = 0;
+        virtual void UpdateTilesMapping(uint32_t textureId, std::vector<uint32_t>& tileIndices) = 0;
 
         // Get a list of tiles that are no longer requested and should be unmapped from the texture
-        virtual void GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices) = 0;
+        virtual void GetTilesToUnmap(uint32_t textureId, std::vector<uint32_t>& tileIndices) = 0;
 
         // Writes MinMip residency data to a mapped texture (uint8_t per tile)
         virtual void WriteMinMipData(uint32_t textureId, uint8_t* data) = 0;
 
-        // Finds a condidate tile to be defragmented (moved into a heap with free space)
-        virtual TextureAndTile GetFragmentedTextureTile(TileAllocation& prevTileAllocation) = 0;
+        // Defragment up to a specified number of tiles (move them to a heap with free space on the "left" of their current heap)
+        virtual void DefragmentTiles(uint32_t numTiles) = 0;
+
+        // Get a list of empty heaps
+        virtual void GetEmptyHeaps(std::vector<uint32_t>& emptyHeaps) = 0;
 
         // Get the description of a texture
         virtual TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const = 0;
 
         // Checks if a tile can currently be moved (for defragmentation)
-        virtual bool IsMovableTile(uint32_t textureId, TileType tileIndex) const = 0;
+        virtual bool IsMovableTile(uint32_t textureId, uint32_t tileIndex) const = 0;
 
         // Get the all tile coordinates for a texture
         virtual const std::vector<TileCoord>& GetTileCoordinates(uint32_t textureId) const = 0;
