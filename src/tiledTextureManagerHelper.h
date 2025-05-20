@@ -247,6 +247,11 @@ namespace rtxts
             return list.front();
         }
 
+        bool contains(const T& val) const
+        {
+            return map.find(val) != map.end();
+        }
+
         void erase(const T& val)
         {
             auto it = map.find(val);

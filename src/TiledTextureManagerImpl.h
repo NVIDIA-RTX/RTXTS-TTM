@@ -12,8 +12,6 @@
 
 #pragma once
 
-#define ENABLE_STATISTICS 1
-
 #include "../include/rtxts-ttm/TiledTextureManager.h"
 #include "tiledTextureManagerHelper.h"
 #include "tiledTextureAllocator.h"
@@ -24,32 +22,42 @@ namespace rtxts
 {
     struct MipLevelTilingDesc
     {
-        TileType firstTileIndex = 0;
-        TileType tilesX = 0;
-        TileType tilesY = 0;
+        uint32_t firstTileIndex = 0;
+        uint32_t tilesX = 0;
+        uint32_t tilesY = 0;
     };
 
     struct TiledTextureSharedDesc
     {
-        TileType regularTilesNum = 0;
-        TileType packedTilesNum = 0;
-        MipLevelType regularMipLevelsNum = 0;
-        MipLevelType packedMipLevelsNum = 0;
-        TileType tileWidth = 0;
-        TileType tileHeight = 0;
-        TileType feedbackGranularityX = 1;
-        TileType feedbackGranularityY = 1;
-        TileType feedbackTilesX = 0;
-        TileType feedbackTilesY = 0;
+        uint32_t regularTilesNum = 0;
+        uint32_t packedTilesNum = 0;
+        uint8_t regularMipLevelsNum = 0;
+        uint8_t packedMipLevelsNum = 0;
+        uint32_t tileWidth = 0;
+        uint32_t tileHeight = 0;
+        uint32_t feedbackGranularityX = 1;
+        uint32_t feedbackGranularityY = 1;
+        uint32_t feedbackTilesX = 0;
+        uint32_t feedbackTilesY = 0;
 
         std::vector<MipLevelTilingDesc> mipLevelTilingDescs;
         std::vector<TileCoord> tileIndexToTileCoord;
-        std::vector<TileType> tileIndexToLowerMipTileIndex;
+        std::vector<uint32_t> tileIndexToLowerMipTileIndex;
     };
 
+    // Tile state which implements a state machine for the tile
+    // Valid state transitions:
+    // Free -> Requested
+    // Requested -> Allocated
+    // Allocated -> Mapped
+    // Mapped -> Free
+    // Mapped -> Standby
+    // Standby -> Free
+    // Standby -> Mapped
     enum TileState
     {
         TileState_Free,
+        TileState_Requested,
         TileState_Allocated,
         TileState_Mapped,
         TileState_Standby,
@@ -60,19 +68,16 @@ namespace rtxts
         uint32_t allocatedUnpackedTilesNum = 0;
         uint32_t descIndex = 0;
 
-#if ENABLE_STATISTICS
-        TileType requestedTilesNum = 0; // statistics
-#endif // ENABLE_STATISTICS
         std::vector<float> lastRequestedTime;
 
         std::vector<TileAllocation> tileAllocations;
-        std::vector<TileType> tilesToMap;
-        std::vector<TileType> tilesToUnmap;
+        std::vector<uint32_t> tilesToMap;
+        std::vector<uint32_t> tilesToUnmap;
 
-        BitArray requestedBits; // bit set for tiles which are actively requested
-        BitArray allocatedBits; // bit set for tiles which are allocated
-        BitArray mappedBits; // bit set for tiles which are mapped
-        BitArray standbyBits; // bit set for tiles which are in standby
+        std::vector<TileState> tileStates;
+
+        uint32_t requestedTilesNum = 0; // number of tiles currently being requested by sampler feedback
+        BitArray requestedBits; // tiles which are currently being actively requested (for MatchPrimaryTexture)
     };
 
     class TiledTextureManagerImpl : public TiledTextureManager
@@ -88,19 +93,29 @@ namespace rtxts
         void RemoveTiledTexture(uint32_t textureId) override;
 
         void UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout) override;
-
         void MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout) override;
 
-        void GetTilesToMap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
-        void UpdateTilesMapping(uint32_t textureId, std::vector<TileType>& tileIndices) override;
-        void GetTilesToUnmap(uint32_t textureId, std::vector<TileType>& tileIndices) override;
+        uint32_t GetNumDesiredHeaps() override;
+
+        void AddHeap(uint32_t heapId) override;
+        void RemoveHeap(uint32_t heapId) override;
+
+        void TrimStandbyTiles() override;
+
+        void AllocateRequestedTiles() override;
+
+        void GetTilesToMap(uint32_t textureId, std::vector<uint32_t>& tileIndices) override;
+        void UpdateTilesMapping(uint32_t textureId, std::vector<uint32_t>& tileIndices) override;
+        void GetTilesToUnmap(uint32_t textureId, std::vector<uint32_t>& tileIndices) override;
 
         void WriteMinMipData(uint32_t textureId, uint8_t* data) override;
 
-        TextureAndTile GetFragmentedTextureTile(TileAllocation& prevTileAllocation) override;
+        void DefragmentTiles(uint32_t numTiles) override;
+
+        void GetEmptyHeaps(std::vector<uint32_t>& emptyHeaps) override;
 
         TextureDesc GetTextureDesc(uint32_t textureId, TextureTypes textureType) const override;
-        bool IsMovableTile(uint32_t textureId, TileType tileIndex) const override;
+        bool IsMovableTile(uint32_t textureId, uint32_t tileIndex) const override;
 
         const std::vector<TileCoord>& GetTileCoordinates(uint32_t textureId) const override;
         const std::vector<TileAllocation>& GetTileAllocations(uint32_t textureId) const override;
@@ -113,8 +128,7 @@ namespace rtxts
 
         uint32_t GetTileIndex(const TiledTextureSharedDesc& tiledTextureDesc, const TileCoord& tileCoord) const;
 
-        void TransitionTile(uint32_t textureId, TileType tileIndex, TileState newState);
-        void RemoveTileFromStandby(uint32_t textureId, TileType tileIndex);
+        bool TransitionTile(uint32_t textureId, uint32_t tileIndex, TileState newState);
 
         std::shared_ptr<TileAllocator> m_tileAllocator;
         const TiledTextureManagerDesc m_tiledTextureManagerDesc;
@@ -124,8 +138,10 @@ namespace rtxts
         std::vector<TiledTextureSharedDesc> m_tiledTextureSharedDescs;
         std::vector<uint32_t> m_tiledTextureFreelist;
 
-        LRUQueue<TextureAndTile, TextureAndTileHash> m_standbyQueue;
+        LRUQueue<TextureAndTile, TextureAndTileHash> m_requestedQueue; // Tiles which are waiting to be allocated
+        LRUQueue<TextureAndTile, TextureAndTileHash> m_standbyQueue; // Tiles which are currently in standby
 
-        uint32_t m_totalTilesNum;
+        uint32_t m_totalTilesNum; // Total number of tiles in all textures
+        uint32_t m_activeTilesNum; // Total number of active (requested+allocated) tiles in all textures
     };
 } // rtxts
