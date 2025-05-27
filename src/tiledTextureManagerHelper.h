@@ -1,11 +1,13 @@
 /*
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: LicenseRef-NvidiaProprietary
  *
- * NVIDIA CORPORATION and its licensors retain all intellectual property
- * and proprietary rights in and to this software, related documentation
- * and any modifications thereto.  Any use, reproduction, disclosure or
- * distribution of this software and related documentation without an express
- * license agreement from NVIDIA CORPORATION is strictly prohibited.
+ * NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+ * property and proprietary rights in and to this material, related
+ * documentation and any modifications thereto. Any use, reproduction,
+ * disclosure or distribution of this material and related documentation
+ * without an express license agreement from NVIDIA CORPORATION or
+ * its affiliates is strictly prohibited.
  */
 
 #pragma once
@@ -127,6 +129,14 @@ namespace rtxts
                 m_words[i] ^= b.m_words[i];
         }
 
+        bool operator==(const BitArray& b)
+        {
+            for (uint32_t i = 0; i < m_wordsNum; i++)
+                if (m_words[i] != b.m_words[i])
+                    return false;
+            return true;
+        }
+
         BitArray operator&(const BitArray& b)
         {
             BitArray a = *this;
@@ -235,6 +245,11 @@ namespace rtxts
         const T& front() const
         {
             return list.front();
+        }
+
+        bool contains(const T& val) const
+        {
+            return map.find(val) != map.end();
         }
 
         void erase(const T& val)

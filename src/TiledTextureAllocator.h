@@ -1,16 +1,18 @@
 /*
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: LicenseRef-NvidiaProprietary
  *
- * NVIDIA CORPORATION and its licensors retain all intellectual property
- * and proprietary rights in and to this software, related documentation
- * and any modifications thereto.  Any use, reproduction, disclosure or
- * distribution of this software and related documentation without an express
- * license agreement from NVIDIA CORPORATION is strictly prohibited.
+ * NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+ * property and proprietary rights in and to this material, related
+ * documentation and any modifications thereto. Any use, reproduction,
+ * disclosure or distribution of this material and related documentation
+ * without an express license agreement from NVIDIA CORPORATION or
+ * its affiliates is strictly prohibited.
  */
 
 #pragma once
 
-#include "../include/rtxts-ttm/tiledTextureManager.h"
+#include "../include/rtxts-ttm/TiledTextureManager.h"
 
 #include <vector>
 #include <set>
@@ -70,9 +72,12 @@ namespace rtxts
     class TileAllocator
     {
     public:
-        TileAllocator(uint32_t heapSizeInTiles, uint32_t tileSizeInBytes, HeapAllocator* heapAllocatior);
+        TileAllocator(uint32_t heapSizeInTiles, uint32_t tileSizeInBytes);
 
-        std::shared_ptr<TiledHeap> FindOrAllocFreeHeap();
+        void AddHeap(uint32_t heapId);
+        void RemoveHeap(uint32_t heapId);
+
+        std::shared_ptr<TiledHeap> FindFreeHeap();
 
         TileAllocation AllocateTile(uint32_t textureId, uint32_t tileIndex);
         void FreeTile(TileAllocation& tileAllocation);
@@ -87,11 +92,22 @@ namespace rtxts
             return m_allocatedTilesNum;
         }
 
+        uint32_t GetTotalTilesNum()
+        {
+            return GetHeapsNum() * m_heapSizeInTiles;
+        }
+
+        uint32_t GetFreeTilesNum()
+        {
+            return GetTotalTilesNum() - m_allocatedTilesNum;
+        }
+
         TextureAndTile GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const;
+
+        void GetEmptyHeaps(std::vector<uint32_t>& emptyHeaps) const;
 
     private:
         std::vector<std::shared_ptr<TiledHeap>> m_heaps;
-        HeapAllocator* m_pHeapAllocator = nullptr;
         const uint32_t m_heapSizeInTiles;
         const uint32_t m_tileSizeInBytes;
         uint32_t m_allocatedTilesNum = 0;

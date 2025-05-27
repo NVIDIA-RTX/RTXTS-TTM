@@ -6,6 +6,8 @@
 # distribution of this software and related documentation without an express
 # license agreement from NVIDIA CORPORATION is strictly prohibited.
 
+cmake_minimum_required(VERSION 3.10)
+
 project(rtxts-ttm)
 
 file(GLOB rtxts-ttm_include

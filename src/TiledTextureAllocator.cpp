@@ -1,14 +1,16 @@
 /*
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: LicenseRef-NvidiaProprietary
  *
- * NVIDIA CORPORATION and its licensors retain all intellectual property
- * and proprietary rights in and to this software, related documentation
- * and any modifications thereto.  Any use, reproduction, disclosure or
- * distribution of this software and related documentation without an express
- * license agreement from NVIDIA CORPORATION is strictly prohibited.
+ * NVIDIA CORPORATION, its affiliates and licensors retain all intellectual
+ * property and proprietary rights in and to this material, related
+ * documentation and any modifications thereto. Any use, reproduction,
+ * disclosure or distribution of this material and related documentation
+ * without an express license agreement from NVIDIA CORPORATION or
+ * its affiliates is strictly prohibited.
  */
 
-#include "tiledTextureAllocator.h"
+#include "TiledTextureAllocator.h"
 
 namespace rtxts
 {
@@ -50,33 +52,44 @@ namespace rtxts
         m_allocations[heapTileIndex] = {};
     }
 
-    TileAllocator::TileAllocator(uint32_t heapSizeInTiles, uint32_t tileSizeInBytes, HeapAllocator* pHeapAllocator)
+    TileAllocator::TileAllocator(uint32_t heapSizeInTiles, uint32_t tileSizeInBytes)
         : m_heapSizeInTiles(heapSizeInTiles)
         , m_tileSizeInBytes(tileSizeInBytes)
-        , m_pHeapAllocator(pHeapAllocator)
         , m_allocatedTilesNum(0)
     {
     }
 
-    std::shared_ptr<TiledHeap> TileAllocator::FindOrAllocFreeHeap()
+    void TileAllocator::AddHeap(uint32_t heapId)
+    {
+        m_heaps.push_back(std::make_shared<TiledHeap>(m_heapSizeInTiles, heapId));
+    }
+
+    void TileAllocator::RemoveHeap(uint32_t heapId)
+    {
+        for (auto it = m_heaps.begin(); it != m_heaps.end(); ++it)
+        {
+            if ((*it)->GetHeapId() == heapId)
+            {
+                m_heaps.erase(it);
+                return;
+            }
+        }
+    }
+
+    std::shared_ptr<TiledHeap> TileAllocator::FindFreeHeap()
     {
         for (auto heap : m_heaps)
             if (heap->FreeTilesNum())
                 return heap;
 
-        uint32_t heapId;
-        m_pHeapAllocator->AllocateHeap(m_heapSizeInTiles * m_tileSizeInBytes, heapId);
-
-        m_heaps.push_back(std::make_shared<TiledHeap>(m_heapSizeInTiles, heapId));
-
-        return m_heaps.back();
+        return nullptr;
     }
 
     TileAllocation TileAllocator::AllocateTile(uint32_t textureId, uint32_t tileIndex)
     {
         TileAllocation tileAllocation = {};
 
-        auto pHeap = FindOrAllocFreeHeap();
+        auto pHeap = FindFreeHeap();
         if (!pHeap)
             return tileAllocation;
 
@@ -93,22 +106,6 @@ namespace rtxts
         TiledHeap* pTiledHeap = reinterpret_cast<TiledHeap*>(tileAllocation.pHeap);
         pTiledHeap->FreeTile(tileAllocation.heapTileIndex);
         m_allocatedTilesNum--;
-
-        if (pTiledHeap->IsEmpty())
-        {
-            uint32_t heapId = pTiledHeap->GetHeapId();
-            m_pHeapAllocator->ReleaseHeap(heapId);
-
-            for (auto it = m_heaps.begin(); it != m_heaps.end(); ++it)
-            {
-                auto& heap = *it;
-                if (heap->GetHeapId() == heapId)
-                {
-                    m_heaps.erase(it);
-                    return;
-                }
-            }
-        }
     }
 
     TextureAndTile TileAllocator::GetFragmentedTextureTile(TiledTextureManager* tiledTextureManager) const
@@ -151,5 +148,12 @@ namespace rtxts
         }
 
         return tileAllocation;
+    }
+
+    void TileAllocator::GetEmptyHeaps(std::vector<uint32_t>& emptyHeaps) const
+    {
+        for (auto& heap : m_heaps)
+            if (heap->IsEmpty())
+                emptyHeaps.push_back(heap->GetHeapId());
     }
 } // rtxts
