@@ -300,7 +300,7 @@ namespace rtxts
         // Iterate backwards (lower res to higher res tiles) and only increment if the mip chain is contiguous to avoid artifacts with missing tiles in the middle
         if (desc.regularTilesNum)
         {
-            for (uint32_t tileIndex = 0; tileIndex < desc.regularTilesNum; ++tileIndex)
+            for (int32_t tileIndex = desc.regularTilesNum - 1; tileIndex >= 0; --tileIndex)
             {
                 if (tiledTextureState.tileStates[tileIndex] != TileState_Mapped && tiledTextureState.tileStates[tileIndex] != TileState_Standby)
                     continue;
