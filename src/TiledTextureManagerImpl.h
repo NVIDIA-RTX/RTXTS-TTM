@@ -13,8 +13,8 @@
 #pragma once
 
 #include "../include/rtxts-ttm/TiledTextureManager.h"
-#include "tiledTextureManagerHelper.h"
-#include "tiledTextureAllocator.h"
+#include "TiledTextureManagerHelper.h"
+#include "TiledTextureAllocator.h"
 
 typedef uint32_t ObjectType;
 
@@ -43,6 +43,20 @@ namespace rtxts
         std::vector<MipLevelTilingDesc> mipLevelTilingDescs;
         std::vector<TileCoord> tileIndexToTileCoord;
         std::vector<uint32_t> tileIndexToLowerMipTileIndex;
+
+        bool Matches(TiledTextureSharedDesc const& other) const
+        {
+            return regularTilesNum == other.regularTilesNum
+                && packedTilesNum == other.packedTilesNum
+                && regularMipLevelsNum == other.regularMipLevelsNum
+                && packedMipLevelsNum == other.packedMipLevelsNum
+                && tileWidth == other.tileWidth
+                && tileHeight == other.tileHeight
+                && feedbackGranularityX == other.feedbackGranularityX
+                && feedbackGranularityY == other.feedbackGranularityY
+                && feedbackTilesX == other.feedbackTilesX
+                && feedbackTilesY == other.feedbackTilesY;
+        }
     };
 
     // Tile state which implements a state machine for the tile

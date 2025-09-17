@@ -467,7 +467,7 @@ namespace rtxts
         bool needNewSharedDesc = true;
         for (uint32_t i = 0; i < sharedDescsNum; ++i)
         {
-            if (std::memcmp(&m_tiledTextureSharedDescs[i], &desc, offsetof(TiledTextureSharedDesc, feedbackTilesY) + sizeof(TiledTextureSharedDesc::feedbackTilesY)) == 0)
+            if (m_tiledTextureSharedDescs[i].Matches(desc))
             {
                 uint32_t blockSize = tiledTextureDesc.regularMipLevelsNum * sizeof(MipLevelTilingDesc);
                 if (!tiledTextureDesc.regularMipLevelsNum || std::memcmp(&m_tiledTextureSharedDescs[i].mipLevelTilingDescs.front(), &desc.mipLevelTilingDescs.front(), blockSize) == 0)
