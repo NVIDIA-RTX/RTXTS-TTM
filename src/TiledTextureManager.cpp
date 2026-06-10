@@ -52,14 +52,14 @@ namespace rtxts
 
         InitTiledTexture(textureId, tiledTextureDesc);
 
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
         m_totalTilesNum += desc.packedTilesNum + desc.regularTilesNum;
     }
 
     void TiledTextureManagerImpl::RemoveTiledTexture(uint32_t textureId)
     {
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         // Free all allocated tiles
@@ -85,7 +85,7 @@ namespace rtxts
 
     void TiledTextureManagerImpl::UpdateWithSamplerFeedback(uint32_t textureId, SamplerFeedbackDesc& samplerFeedbackDesc, float timestamp, float timeout)
     {
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         tiledTextureState.requestedTilesNum = desc.packedTilesNum;
@@ -148,8 +148,8 @@ namespace rtxts
 
     void TiledTextureManagerImpl::MatchPrimaryTexture(uint32_t primaryTextureId, uint32_t followerTextureId, float timeStamp, float timeout)
     {
-        TiledTextureState& primaryTextureState = m_tiledTextures[primaryTextureId];
-        TiledTextureState& followerTextureState = m_tiledTextures[followerTextureId];
+        TiledTextureState& primaryTextureState = m_tiledTextures.at(primaryTextureId);
+        TiledTextureState& followerTextureState = m_tiledTextures.at(followerTextureId);
         const TiledTextureSharedDesc& primaryDesc = m_tiledTextureSharedDescs[primaryTextureState.descIndex];
         const TiledTextureSharedDesc& followerDesc = m_tiledTextureSharedDescs[followerTextureState.descIndex];
 
@@ -263,7 +263,7 @@ namespace rtxts
     void TiledTextureManagerImpl::GetTilesToMap(uint32_t textureId, std::vector<uint32_t>& tileIndices)
     {
         tileIndices.clear();
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
 
         tileIndices = tiledTextureState.tilesToMap;
         tiledTextureState.tilesToMap.clear();
@@ -271,7 +271,7 @@ namespace rtxts
 
     void TiledTextureManagerImpl::UpdateTilesMapping(uint32_t textureId, std::vector<uint32_t>& tileIndices)
     {
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
 
         for (auto& tileIndex : tileIndices)
             TransitionTile(textureId, tileIndex, TileState_Mapped);
@@ -280,7 +280,7 @@ namespace rtxts
     void TiledTextureManagerImpl::GetTilesToUnmap(uint32_t textureId, std::vector<uint32_t>& tileIndices)
     {
         tileIndices.clear();
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
 
         tileIndices = tiledTextureState.tilesToUnmap;
         tiledTextureState.tilesToUnmap.clear();
@@ -288,7 +288,7 @@ namespace rtxts
 
     void TiledTextureManagerImpl::WriteMinMipData(uint32_t textureId, uint8_t* data)
     {
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         uint32_t minMipTilesNum = desc.regularTilesNum ? desc.mipLevelTilingDescs[0].tilesX * desc.mipLevelTilingDescs[0].tilesY : 1;
@@ -350,21 +350,21 @@ namespace rtxts
 
     const std::vector<TileCoord>& TiledTextureManagerImpl::GetTileCoordinates(uint32_t textureId) const
     {
-        const TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        const TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
 
         return m_tiledTextureSharedDescs[tiledTextureState.descIndex].tileIndexToTileCoord;
     }
 
     const std::vector<TileAllocation>& TiledTextureManagerImpl::GetTileAllocations(uint32_t textureId) const
     {
-        const TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        const TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
 
         return tiledTextureState.tileAllocations;
     }
 
     TextureDesc TiledTextureManagerImpl::GetTextureDesc(uint32_t textureId, TextureTypes textureType) const
     {
-        const TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        const TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         TextureDesc textureDesc = {};
@@ -387,7 +387,7 @@ namespace rtxts
 
     bool TiledTextureManagerImpl::IsMovableTile(uint32_t textureId, uint32_t tileIndex) const
     {
-        const TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        const TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         return (tileIndex < desc.regularTilesNum) && (tiledTextureState.tileStates[tileIndex] == TileState_Mapped || tiledTextureState.tileStates[tileIndex] == TileState_Standby);
@@ -451,7 +451,7 @@ namespace rtxts
         }
 
         // Init streamed texture state
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         uint32_t tilesNum = desc.regularTilesNum + desc.packedTilesNum;
         tiledTextureState.lastRequestedTime.resize(tilesNum);
         tiledTextureState.tileAllocations.resize(tilesNum);
@@ -531,7 +531,7 @@ namespace rtxts
 
     void TiledTextureManagerImpl::UpdateTiledTexture(uint32_t textureId, BitArray requestedBits, uint32_t firstTileIndex, float timestamp, float timeout)
     {
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         // Save requested bites for use in follower textures
@@ -594,7 +594,7 @@ namespace rtxts
 
     bool TiledTextureManagerImpl::TransitionTile(uint32_t textureId, uint32_t tileIndex, TileState newState)
     {
-        TiledTextureState& tiledTextureState = m_tiledTextures[textureId];
+        TiledTextureState& tiledTextureState = m_tiledTextures.at(textureId);
         const TiledTextureSharedDesc& desc = m_tiledTextureSharedDescs[tiledTextureState.descIndex];
 
         auto& tileState = tiledTextureState.tileStates[tileIndex];
