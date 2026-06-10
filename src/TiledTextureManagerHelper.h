@@ -102,8 +102,16 @@ namespace rtxts
         void Init(uint32_t numbits)
         {
             m_bitsNum = numbits;
-            m_wordsNum = ((m_bitsNum - 1) / 64) + 1;
-            m_words.resize(m_wordsNum);
+            if (numbits > 0)
+            {
+                m_wordsNum = ((m_bitsNum - 1) / 64) + 1;
+                m_words.resize(m_wordsNum);
+            }
+            else
+            {
+                m_wordsNum = 0;
+                m_words.clear();
+            }
         }
 
         void Clear()
