@@ -123,7 +123,9 @@ namespace rtxts
                 if (mipLevel != 0xFF)
                 {
                     TileCoord tileCoord;
-                    tileCoord.mipLevel = (uint32_t)std::max(mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
+                    // Clamp the mip level to the valid range so it is never used as an out-of-range shift count below
+                    tileCoord.mipLevel = (uint8_t)std::max(mipLevel + samplerFeedbackDesc.mipLevelBias, 0);
+                    tileCoord.mipLevel = std::min<uint8_t>(tileCoord.mipLevel, desc.regularMipLevelsNum - 1);
 
                     tileCoord.x = ((feedbackTileIndex % desc.feedbackTilesX) / desc.feedbackGranularityX) >> tileCoord.mipLevel;
                     tileCoord.y = ((feedbackTileIndex / desc.feedbackTilesX) / desc.feedbackGranularityY) >> tileCoord.mipLevel;
