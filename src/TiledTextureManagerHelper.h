@@ -16,9 +16,24 @@
 #include <iterator>
 #include <list>
 #include <unordered_map>
+#include <cstdint>
+#include <bitset>
 
 namespace rtxts
 {
+    // Portable 64-bit population count. __popcnt64 is an x86-only intrinsic, so
+    // fall back to a portable implementation on other targets (e.g. MSVC ARM64).
+    inline uint32_t PopCount64(uint64_t x)
+    {
+#if defined(__GNUC__) || defined(__clang__)
+        return static_cast<uint32_t>(__builtin_popcountll(x));
+#elif defined(_M_X64)
+        return static_cast<uint32_t>(__popcnt64(x));
+#else
+        return static_cast<uint32_t>(std::bitset<64>(x).count());
+#endif
+    }
+
     class BitArray
     {
     public:
@@ -188,7 +203,7 @@ namespace rtxts
         {
             uint32_t bitCount = 0;
             for (uint32_t i = 0; i < m_wordsNum; i++)
-                bitCount += static_cast<uint32_t>(__popcnt64(m_words[i]));
+                bitCount += PopCount64(m_words[i]);
 
             return bitCount;
         }
